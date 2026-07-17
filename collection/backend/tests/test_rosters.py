@@ -10,7 +10,7 @@ Coverage:
 - Duplicate numbers: later row wins
 - RunRosters.get unknown run → EMPTY_ROSTER
 - RunRosters.list_runs: sees a rostered-but-never-captured run; [] when root absent
-- RunRosters.roster_txt_path: path for missing file
+- RunRosters.roster_csv_path: path for missing file
 - RunRosters.load_existing: restores state on a fresh instance
 - Route-level via FastAPI TestClient using a stub engine (POST /roster, GET /runs)
 """
@@ -85,12 +85,13 @@ class TestSetHappyPath:
         assert "101" in content
         assert "202" in content
 
-    def test_roster_txt_written_with_numbers(self, tmp_path):
+    def test_no_roster_txt_written(self, tmp_path):
+        """roster.csv is the single roster file; no derived roster.txt."""
         rr = _make_rosters(tmp_path)
         rr.set("myrun", "number,name,category\n101,Alice,Cat1\n202,Bob,Cat2\n")
-        roster_txt = tmp_path / "myrun" / "roster.txt"
-        assert roster_txt.exists()
-        numbers_in_file = set(roster_txt.read_text().strip().split("\n"))
+        assert not (tmp_path / "myrun" / "roster.txt").exists()
+        csv_lines = (tmp_path / "myrun" / "roster.csv").read_text().strip().split("\n")
+        numbers_in_file = {line.split(",")[0] for line in csv_lines[1:]}
         assert numbers_in_file == {"101", "202"}
 
     def test_get_returns_both_entries(self, tmp_path):
@@ -131,9 +132,9 @@ class TestSetReplacement:
         rr.set("myrun", "101,Alice,Cat1\n")
         rr.set("myrun", "202,Bob,Cat2\n")
 
-        roster_txt = (tmp_path / "myrun" / "roster.txt").read_text()
-        assert "202" in roster_txt
-        assert "101" not in roster_txt
+        roster_csv = (tmp_path / "myrun" / "roster.csv").read_text()
+        assert "202" in roster_csv
+        assert "101" not in roster_csv
 
     def test_second_set_supersedes_old_number_in_memory(self, tmp_path):
         rr = _make_rosters(tmp_path)
@@ -206,13 +207,13 @@ class TestSetRejection:
         """FR19: disk files are untouched when a new upload is rejected."""
         rr = _make_rosters(tmp_path)
         rr.set("myrun", "101,Alice,Cat1\n")
-        txt_before = (tmp_path / "myrun" / "roster.txt").read_text()
+        csv_before = (tmp_path / "myrun" / "roster.csv").read_text()
 
         with pytest.raises(ValueError):
             rr.set("myrun", "number,name,category\n")  # header-only
 
-        txt_after = (tmp_path / "myrun" / "roster.txt").read_text()
-        assert txt_after == txt_before
+        csv_after = (tmp_path / "myrun" / "roster.csv").read_text()
+        assert csv_after == csv_before
 
     def test_rejection_no_files_created_for_new_run(self, tmp_path):
         """If no prior roster, a rejected upload must not create the run dir."""
@@ -246,7 +247,7 @@ class TestDuplicateNumbers:
 
 
 # ---------------------------------------------------------------------------
-# Unit tests — get, list_runs, roster_txt_path
+# Unit tests — get, list_runs, roster_csv_path
 # ---------------------------------------------------------------------------
 
 class TestGetListRosterPath:
@@ -271,17 +272,17 @@ class TestGetListRosterPath:
         runs = rr.list_runs()
         assert set(runs) == {"run1", "run2"}
 
-    def test_roster_txt_path_for_roster_less_run(self, tmp_path):
-        """roster_txt_path returns a path even when the file doesn't exist yet."""
+    def test_roster_csv_path_for_roster_less_run(self, tmp_path):
+        """roster_csv_path returns a path even when the file doesn't exist yet."""
         rr = _make_rosters(tmp_path)
-        path = rr.roster_txt_path("no-roster-yet")
-        assert path.endswith(os.path.join("no-roster-yet", "roster.txt"))
+        path = rr.roster_csv_path("no-roster-yet")
+        assert path.endswith(os.path.join("no-roster-yet", "roster.csv"))
         assert not os.path.exists(path)
 
-    def test_roster_txt_path_for_known_run(self, tmp_path):
+    def test_roster_csv_path_for_known_run(self, tmp_path):
         rr = _make_rosters(tmp_path)
         rr.set("myrun", "101,Alice,Cat1\n")
-        path = rr.roster_txt_path("myrun")
+        path = rr.roster_csv_path("myrun")
         assert os.path.isfile(path)
 
 
@@ -497,7 +498,7 @@ class TestRouteLevel:
         )
         run_dir = tmp_path / "lap-3-nearside"
         assert (run_dir / "roster.csv").exists()
-        assert (run_dir / "roster.txt").exists()
+        assert not (run_dir / "roster.txt").exists()
 
     def test_post_roster_malformed_returns_400(self, tmp_path):
         client, _ = _make_client_with_stub_engine(tmp_path)
@@ -532,7 +533,7 @@ class TestRouteLevel:
             data={"run": "myrun"},
             files={"roster": ("roster.csv", io.BytesIO(good_csv), "text/csv")},
         )
-        first_txt = (tmp_path / "myrun" / "roster.txt").read_text()
+        first_csv = (tmp_path / "myrun" / "roster.csv").read_text()
 
         # Second upload — bad
         bad_csv = b"number,name,category\n"
@@ -542,7 +543,7 @@ class TestRouteLevel:
             files={"roster": ("roster.csv", io.BytesIO(bad_csv), "text/csv")},
         )
         assert resp.status_code == 400
-        assert (tmp_path / "myrun" / "roster.txt").read_text() == first_txt
+        assert (tmp_path / "myrun" / "roster.csv").read_text() == first_csv
 
     def test_get_runs_lists_rostered_run(self, tmp_path):
         client, _ = _make_client_with_stub_engine(tmp_path)

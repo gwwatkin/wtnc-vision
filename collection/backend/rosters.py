@@ -1,8 +1,8 @@
 """rosters.py — RunRosters: per-run roster state.
 
-Implements the frozen contract from tasks/README.md.
-Parses number,name,category CSV; atomically writes roster.csv + roster.txt
-per run; holds an immutable Roster the engine reads lock-free.
+Parses number,name,category CSV; atomically writes roster.csv per run (the
+single roster file — validate.load_roster reads its first column directly);
+holds an immutable Roster the engine reads lock-free.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Roster:
-    numbers: frozenset[str]               # valid-number set (mirrors roster.txt)
+    numbers: frozenset[str]               # valid-number set (roster.csv column 1)
     entries: dict[str, tuple[str, str]]   # number -> (name, category)
 
 
@@ -132,7 +132,7 @@ class RunRosters:
         1. Validate label (strip; blank → ValueError).
         2. run = FrameStore.safe_label(label).
         3. Parse CSV with _parse_csv.  Zero accepted rows → ValueError; no files touched.
-        4. Atomically write roster.csv and roster.txt under run_root/<run>/.
+        4. Atomically write roster.csv under run_root/<run>/.
         5. Rebind self._by_run[run] to a new frozen Roster (replace-don't-mutate).
         6. Return (run, count).
         """
@@ -162,11 +162,7 @@ class RunRosters:
             csv_lines.append(row_buf.getvalue().rstrip("\r\n"))
         roster_csv_content = "\n".join(csv_lines) + "\n"
 
-        # roster.txt: one number per line.
-        roster_txt_content = "\n".join(sorted(entries.keys())) + "\n"
-
         _write_atomic(os.path.join(run_dir, "roster.csv"), roster_csv_content)
-        _write_atomic(os.path.join(run_dir, "roster.txt"), roster_txt_content)
 
         # Replace-don't-mutate: build a new Roster and rebind.
         new_roster = Roster(
@@ -181,9 +177,13 @@ class RunRosters:
         """Current Roster for a safe run id; EMPTY_ROSTER when none uploaded."""
         return self._by_run.get(run, EMPTY_ROSTER)
 
-    def roster_txt_path(self, run: str) -> str:
-        """Absolute path to run_root/<run>/roster.txt (may not exist yet)."""
-        return os.path.join(self._run_root, run, "roster.txt")
+    def roster_csv_path(self, run: str) -> str:
+        """Absolute path to run_root/<run>/roster.csv (may not exist yet).
+
+        The CV pipeline's validate.load_roster reads this file directly (first
+        column); a missing file means confidence-only validation (FR20).
+        """
+        return os.path.join(self._run_root, run, "roster.csv")
 
     def list_runs(self) -> list[str]:
         """Run ids = directories directly under run_root.

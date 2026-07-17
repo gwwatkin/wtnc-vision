@@ -330,6 +330,23 @@ class TestLoadRoster:
         cfg = {"validate": {"roster": "/tmp/no_such_roster_file_12345.txt"}}
         assert load_roster(cfg) is None
 
+    def test_load_roster_csv_format(self, tmp_path):
+        """A number,name,category CSV (as written by the roster upload) works:
+        first column is used, header row skipped, quoted fields tolerated."""
+        roster_file = tmp_path / "roster.csv"
+        roster_file.write_text(
+            'number,name,category\n101,"Watkins, George",Cat 3\n545,Alice,Cat 1\n'
+        )
+        cfg = {"validate": {"roster": str(roster_file)}}
+        assert load_roster(cfg) == {"101", "545"}
+
+    def test_load_roster_csv_all_header_returns_none(self, tmp_path):
+        """A file with no digit-first-column rows yields None (no roster)."""
+        roster_file = tmp_path / "roster.csv"
+        roster_file.write_text("number,name,category\n")
+        cfg = {"validate": {"roster": str(roster_file)}}
+        assert load_roster(cfg) is None
+
 
 # ---------------------------------------------------------------------------
 # Tests 11-14: accept_unmatched flag (design §6.1 note / task2)

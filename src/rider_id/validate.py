@@ -23,6 +23,7 @@ being silently accepted.
 """
 from __future__ import annotations
 
+import csv
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -69,9 +70,14 @@ def load_roster(cfg: dict) -> set[str] | None:
     resolved against the current working directory, which should be the project
     root when run via run_poc.py or pytest from the project root).
 
+    The file may be either a plain list of numbers (one per line) or a
+    number,name,category CSV as written by the collection app's roster upload —
+    only the first column is used here. A header row (or any row whose first
+    cell is not a pure digit string) is skipped.
+
     Returns:
-        Set of valid number strings (stripped, one per line), or None if the
-        config key is absent/null or the file cannot be found.
+        Set of valid number strings, or None if the config key is absent/null
+        or the file cannot be found / contains no numbers.
     """
     validate_cfg: dict = cfg.get("validate", {})
     roster_path = validate_cfg.get("roster")
@@ -83,11 +89,13 @@ def load_roster(cfg: dict) -> set[str] | None:
         return None
 
     numbers: set[str] = set()
-    with path.open("r") as fh:
-        for line in fh:
-            stripped = line.strip()
-            if stripped:
-                numbers.add(stripped)
+    with path.open("r", newline="") as fh:
+        for row in csv.reader(fh):
+            if not row:
+                continue
+            cell = row[0].strip()
+            if cell.isdigit():
+                numbers.add(cell)
     return numbers if numbers else None
 
 

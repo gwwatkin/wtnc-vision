@@ -300,8 +300,8 @@ class ResultsEngine:
         entry = one parsed manifest line (filename, client_ts, …).
         Raises on failure (caught by worker loop — FR6).
         """
-        # Point cv_cfg at this run's roster.txt (may not exist → confidence-only)
-        self._cv_cfg["validate"]["roster"] = self._rosters.roster_txt_path(run)
+        # Point cv_cfg at this run's roster.csv (may not exist → confidence-only)
+        self._cv_cfg["validate"]["roster"] = self._rosters.roster_csv_path(run)
 
         # Resolve frame path: filename is root-relative (README refinement 2)
         frame_path = os.path.join(self._run_root, entry["filename"])

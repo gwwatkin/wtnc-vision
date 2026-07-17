@@ -8,7 +8,7 @@ ocr:
   engine: paddleocr           # PP-OCRv6 medium; reads 101 at 0.997 on sample; easyocr is alternate
   use_angle_cls: true         # textline-orientation classifier for tilted cloth panels
 validate:
-  roster: roster.txt          # start-list of valid numbers (one per line); update per event
+  roster: roster.txt          # start-list: plain numbers (one per line) or number,name,category CSV
   min_digits: 1
   max_digits: 3               # confirmed: 1-3 digits, no leading zeros
   leading_zeros: false

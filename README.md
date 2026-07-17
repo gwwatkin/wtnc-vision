@@ -68,8 +68,8 @@ runs/
     crossings.csv                  # append-only: time,number per crossing
     crossings.json                 # rich crossing state (served by GET /results)
     annotated/<crossing_id>.jpg    # annotated representative frame per crossing
-    roster.csv                     # uploaded name/category table
-    roster.txt                     # valid numbers (used by the CV pipeline)
+    roster.csv                     # uploaded roster: number,name,category (also
+                                   # read by the CV pipeline for validation)
 ```
 
 ### Configuration
@@ -114,7 +114,8 @@ All tunable parameters live in `config.yaml`:
 - **`locate.back_band`** — vertical fraction of the rider box where the number panel
   sits (`[0.20, 0.55]` = skip top 20%, crop to 55%).
 - **`score.confidence_threshold`** — reads below this → `needs_review` (default 0.60).
-- **`validate.roster`** — path to `roster.txt` (one valid number per line).
+- **`validate.roster`** — path to the roster file: either plain numbers (one per
+  line) or a `number,name,category` CSV (first column used, header tolerated).
 
 ---
 
