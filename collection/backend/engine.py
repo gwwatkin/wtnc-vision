@@ -26,7 +26,7 @@ if _SRC not in sys.path:
 import cv2  # noqa: E402
 
 # Import pipeline as a module so tests can monkeypatch pipeline.run
-from rider_id import pipeline, zones  # noqa: E402
+from rider_id import pipeline  # noqa: E402
 from rider_id.io_out import write_annotated_image  # noqa: E402
 
 from .live_config import LiveConfig
@@ -345,10 +345,6 @@ class ResultsEngine:
         annotated_dir = os.path.join(run_dir, "annotated")
         os.makedirs(annotated_dir, exist_ok=True)
 
-        # Resolve zone from cv_cfg (cheap, handles varying frame heights)
-        raw_zone = zones.load_zone(self._cv_cfg)
-        resolved_zone = zones.resolve_zone(raw_zone, image_bgr.shape[0])
-
         if is_new:
             # --- New crossing ---
             cid = f"{run}-{number}-{_epoch_ms(t)}"
@@ -368,7 +364,6 @@ class ResultsEngine:
             write_annotated_image(
                 image_bgr,
                 frame_results,
-                resolved_zone,
                 annotated_dir,
                 filename=f"{cid}.jpg",
             )
@@ -429,7 +424,6 @@ class ResultsEngine:
                 write_annotated_image(
                     image_bgr,
                     frame_results,
-                    resolved_zone,
                     annotated_dir,
                     filename=f"{oc.crossing_id}.jpg",
                 )

@@ -100,7 +100,7 @@ Output appears in `out/`:
 ```
 out/
   results.json        # number, confidence, status, bounding box, crop path
-  annotated.jpg       # image with rider boxes, crossing zone, and recognized number
+  annotated.jpg       # image with rider boxes and recognized numbers
   crops/101_0.jpg     # cropped number-panel for each confident read
 ```
 
@@ -111,8 +111,6 @@ at 0.997 confidence).
 
 All tunable parameters live in `config.yaml`:
 
-- **`crossing_zone.polygon`** — `null` = bottom 20% of frame (default); or explicit
-  `[[x,y], …]` pixel polygon.
 - **`locate.back_band`** — vertical fraction of the rider box where the number panel
   sits (`[0.20, 0.55]` = skip top 20%, crop to 55%).
 - **`score.confidence_threshold`** — reads below this → `needs_review` (default 0.60).
@@ -125,8 +123,9 @@ All tunable parameters live in `config.yaml`:
 1. **Single frame, no tracking (POC)**: the `run_poc.py` script processes one still
    image. The live pipeline handles the multi-frame case via time-window deduplication.
 
-2. **Finish-line zone is approximate**: the default zone (bottom 20% of frame) works
-   well for a static finish-line camera but is not a true virtual finish line.
+2. **No finish-line geometry**: every detected rider in frame is OCR'd — there is no
+   crossing-zone filter (dropped; camera angles made it counterproductive). "When did
+   they cross" is approximated by when the number first reads confidently.
 
 3. **Double-number panel layout**: some UCI panels print the number twice. When
    PaddleOCR detects both tokens, the combined string may exceed `max_digits=3` and be

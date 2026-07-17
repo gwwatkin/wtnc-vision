@@ -64,7 +64,6 @@ def _make_cv_cfg() -> dict:
     """Minimal cv_cfg dict that satisfies engine._process_frame."""
     return {
         "validate": {"roster": None, "accept_unmatched": True},
-        "crossing_zone": {"polygon": None},
         "score": {"confidence_threshold": 0.60},
     }
 

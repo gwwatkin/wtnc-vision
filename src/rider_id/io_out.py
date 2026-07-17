@@ -3,7 +3,7 @@ Output writers — Task 5.
 
 Implements:
   write_crops(image_bgr, results, out_dir)        — saves per-number crops; sets crop_path
-  write_annotated_image(image_bgr, results, zone, out_dir) — draws zone + boxes + labels
+  write_annotated_image(image_bgr, results, out_dir)  — draws boxes + labels
   write_json(results, out_dir)                    — serialises CrossingResult list to JSON
 
 Call order: write_crops BEFORE write_json so that crop_path is populated in the JSON.
@@ -29,8 +29,6 @@ _DEFAULT_COLOR = (200, 200, 200)  # grey fallback
 
 # Visual parameters
 _BOX_THICKNESS = 2
-_ZONE_COLOR = (255, 200, 0)       # cyan-ish blue for the zone band
-_ZONE_ALPHA = 0.15                # transparency for zone fill
 _FONT = cv2.FONT_HERSHEY_SIMPLEX
 _FONT_SCALE = 0.6
 _FONT_THICKNESS = 2
@@ -87,15 +85,10 @@ def write_crops(
 def write_annotated_image(
     image_bgr: np.ndarray,
     results: list[CrossingResult],
-    zone: dict,
     out_dir: str,
     filename: str = "annotated.jpg",
 ) -> None:
-    """Draw crossing zone, rider boxes, and number labels; write annotated image.
-
-    Zone drawing:
-      - Polygon zone: draws the polygon outline.
-      - Band zone (default): draws a horizontal band from y_min to the bottom.
+    """Draw rider boxes and number labels; write annotated image.
 
     Box / label coloring:
       - green  → confident
@@ -105,27 +98,11 @@ def write_annotated_image(
     Args:
         image_bgr: Full input image (OpenCV BGR) — NOT modified in-place.
         results:   List of CrossingResult from pipeline.run().
-        zone:      Resolved zone dict from zones.resolve_zone().
         out_dir:   Output directory. Writes to <out_dir>/<filename>.
         filename:  Output filename (default: "annotated.jpg", preserving POC behaviour).
     """
     os.makedirs(out_dir, exist_ok=True)
     canvas = image_bgr.copy()
-    img_h, img_w = canvas.shape[:2]
-
-    # --- Draw the crossing zone ---
-    if zone is not None:
-        overlay = canvas.copy()
-        if "polygon" in zone:
-            pts = np.array(zone["polygon"], dtype=np.int32).reshape((-1, 1, 2))
-            cv2.fillPoly(overlay, [pts], _ZONE_COLOR)
-            cv2.polylines(canvas, [pts], isClosed=True, color=_ZONE_COLOR, thickness=2)
-        elif "y_min" in zone:
-            y_min = int(zone["y_min"])
-            cv2.rectangle(overlay, (0, y_min), (img_w, img_h), _ZONE_COLOR, thickness=-1)
-            cv2.line(canvas, (0, y_min), (img_w, y_min), _ZONE_COLOR, thickness=2)
-        # Blend the semi-transparent fill
-        cv2.addWeighted(overlay, _ZONE_ALPHA, canvas, 1 - _ZONE_ALPHA, 0, canvas)
 
     # --- Draw each rider box and label ---
     for result in results:
