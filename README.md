@@ -1,14 +1,13 @@
-# Finish-Line Rider Number Recognition — POC
+# WTNC Vision
 
-A computer-vision proof of concept that detects cyclists crossing a finish line and reads the back-number printed on their jersey from a still image. The system proves that off-the-shelf person detection (YOLO) and OCR (PaddleOCR) can reliably read race numbers from a fixed overhead camera without any custom model training. See [requirements.md](specs/completed/poc/requirements.md) for the full problem statement and [design.md](specs/completed/poc/design.md) for the architecture.
-
----
+A computer-vision that detects cyclists crossing a finish line and reads the back-number printed on their jersey.
 
 ## Requirements
 
-- **Python 3.12** (the ML wheels — PaddlePaddle, Ultralytics — require Python ≤ 3.12; do **not** use system Python 3.14+)
-- Linux (tested on Arch Linux); macOS should work with the same steps
-- Internet access on first run (YOLO and PaddleOCR models are auto-downloaded; subsequent runs use the cache)
+- A laptop that can build this project (tested on Linux, but Mac and WSL should work).
+  - **Python 3.12** (the ML wheels — PaddlePaddle, Ultralytics — require Python ≤ 3.12; do **not** use system Python 3.14+)
+  - Linux (tested on Arch Linux); macOS should work with the same steps. Perhaps WSL too
+  - Internet access for installation of first run (YOLO and PaddleOCR models are auto-downloaded; subsequent runs use the cache)
 
 ---
 
