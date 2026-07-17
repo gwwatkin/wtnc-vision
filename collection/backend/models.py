@@ -31,7 +31,7 @@ class FrameMeta:
 
 @dataclass
 class StoredFrame:
-    filename: str                 # relative to storage_dir, e.g. "101/101_..._000123.jpg"
+    filename: str                 # relative to storage_dir, e.g. "101/collected/101_..._000123.jpg"
     safe_label: str
     server_ts: str                # ISO-8601 UTC, ms precision
     bytes: int
