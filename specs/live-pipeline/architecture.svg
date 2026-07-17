@@ -48,15 +48,15 @@
   <rect x="382" y="80" width="298" height="60" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
   <text x="531" y="99" text-anchor="middle" font-weight="bold">POST /frames  (validate — unchanged)</text>
   <text x="531" y="117" text-anchor="middle" font-size="11" fill="#666">sink 1: FrameStore.save (disk + manifest)</text>
-  <text x="531" y="132" text-anchor="middle" font-size="11" fill="#666">sink 2: enqueue(stored ref)  → non-blocking</text>
+  <text x="531" y="132" text-anchor="middle" font-size="11" fill="#666">sink 2: notify(run) → wake worker (O(1))</text>
 
-  <!-- queue -->
+  <!-- durable work queue -->
   <rect x="382" y="150" width="298" height="30" rx="4" fill="#fdf6ff" stroke="#7a4fbf"/>
-  <text x="531" y="170" text-anchor="middle" fill="#5a3596">asyncio.Queue — bounded, in-order (D5)</text>
+  <text x="531" y="170" text-anchor="middle" fill="#5a3596">manifest.jsonl + processed_offset = the queue (D5)</text>
 
   <!-- worker -->
   <rect x="382" y="190" width="298" height="150" rx="6" fill="#f6fff6" stroke="#3a9d4a"/>
-  <text x="531" y="209" text-anchor="middle" font-weight="bold" fill="#1f6b2c">single worker (asyncio.to_thread)</text>
+  <text x="531" y="209" text-anchor="middle" font-weight="bold" fill="#1f6b2c">single worker — tails manifest (to_thread)</text>
   <rect x="396" y="216" width="270" height="24" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
   <text x="531" y="232" text-anchor="middle" font-size="11">cv2.imread → pipeline.run(img, cfg)  (reused)</text>
   <rect x="396" y="244" width="270" height="24" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
@@ -88,17 +88,17 @@
 
   <!-- ============ Disk ============ -->
   <rect x="742" y="46" width="222" height="470" rx="8" fill="#fff7e6" stroke="#c98a1b"/>
-  <text x="853" y="68" text-anchor="middle" font-weight="bold" fill="#8a5a00">Disk — run/&lt;label&gt;/ (one run)</text>
+  <text x="853" y="68" text-anchor="middle" font-weight="bold" fill="#8a5a00">Disk — runs/&lt;label&gt;/ (one run)</text>
   <rect x="758" y="84" width="190" height="60" rx="4" fill="#ffffff" stroke="#c98a1b"/>
   <text x="853" y="104" text-anchor="middle" font-size="11">collected/*.jpg</text>
-  <text x="853" y="122" text-anchor="middle" font-size="11">manifest.jsonl</text>
+  <text x="853" y="122" text-anchor="middle" font-size="11">manifest.jsonl (= work queue)</text>
   <text x="853" y="138" text-anchor="middle" font-size="10.5" fill="#888">(sink 1 — per run)</text>
 
   <rect x="758" y="158" width="190" height="76" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
   <text x="853" y="178" text-anchor="middle" font-size="11">crossings.csv  (append-only)</text>
   <text x="853" y="196" text-anchor="middle" font-size="11">crossings.json (atomic)</text>
   <text x="853" y="214" text-anchor="middle" font-size="11">annotated/&lt;id&gt;.jpg</text>
-  <text x="853" y="230" text-anchor="middle" font-size="10.5" fill="#888">(sink 2 — D8)</text>
+  <text x="853" y="230" text-anchor="middle" font-size="10.5" fill="#888">processed_offset · (sink 2 — D8)</text>
 
   <rect x="758" y="248" width="190" height="56" rx="4" fill="#fffbe9" stroke="#c98a1b"/>
   <text x="853" y="268" text-anchor="middle" font-size="11">roster.csv (names)</text>

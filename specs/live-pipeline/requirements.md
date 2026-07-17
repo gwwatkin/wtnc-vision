@@ -67,7 +67,8 @@ Baked into the requirements below (confirmed with the operator):
   control. Resolves OQ4.
 - **D8 — Crossings are persisted to disk as they are produced.** Each crossing is written
   to disk the moment the pipeline finishes it (not only held in memory), so results survive
-  a back-end restart and can also feed the standalone viewer. Resolves OQ7.
+  a back-end restart. Past results are viewed in the unified page by selecting an existing
+  run's label — there is no separate standalone viewer after this feature. Resolves OQ7.
 - **D9 — A run = one capture label; all its inputs and outputs are co-located.** The operator's
   capture **label** is the **run** identity. Every input and output for that label — collected
   frames, manifest, that run's roster, its crossings log, and its annotated frames — lives under
@@ -136,9 +137,9 @@ Baked into the requirements below (confirmed with the operator):
 - **FR5** — When the back-end accepts a frame, it must **hand that frame to the pipeline
   asynchronously** as a second sink, **without blocking or slowing** the disk/manifest sink
   or the HTTP response to the capturing client (G2, G5).
-- **FR6** — Every accepted frame is processed **in order, exactly once** (D5, queue). No
+- **FR6** — Every accepted frame is processed **in order, exactly once** (D5). No
   frame is silently skipped; a frame that fails to process is logged and the loop continues
-  (does not stall the queue).
+  (does not stall processing).
 - **FR7** — Processing runs `pipeline.run` on each frame and keeps only reads with
   status **`confident`**. Lower-confidence (`needs_review`) and `rejected` reads do **not**
   create crossings in this phase (see OQ3).
@@ -146,8 +147,9 @@ Baked into the requirements below (confirmed with the operator):
   viewer consumes (time-ordered crossings enrichable by roster), so the timeline can render
   them (G3, G5).
 - **FR8a** — Each crossing is **written to disk as it is produced** (D8), append-safe like
-  the frame manifest, so results survive a back-end restart and can also be read by the
-  standalone viewer. The corresponding annotated frame (FR15) is persisted alongside it.
+  the frame manifest, so results survive a back-end restart; past runs' results are viewable
+  by selecting that run's label (D9). The corresponding annotated frame (FR15) is persisted
+  alongside it.
 
 ### 5.3 Crossing deduplication
 - **FR9** — Repeated **confident** reads of the **same number** within a configurable time
@@ -249,8 +251,9 @@ Baked into the requirements below (confirmed with the operator):
 - **SC4** — Clicking that crossing opens a **sidebar** showing the **annotated frame** (box
   + number drawn) for it, with the timeline still visible; clicking another result replaces
   the sidebar contents; dismissing closes it (FR12–FR14, D2, D3).
-- **SC5** — During a fast burst the timeline **catches up after** capture stops (queue
-  drains) with **no frames skipped** and capture never freezes (FR5, FR6, NFR2, NFR3).
+- **SC5** — During a fast burst the timeline **catches up after** capture stops (the
+  processing backlog drains) with **no frames skipped** and capture never freezes (FR5,
+  FR6, NFR2, NFR3).
 - **SC6** — With live processing **disabled** in config, the app still captures and stores
   frames exactly as the collection app does today, and the page still loads (FR21, NFR6).
 - **SC7** — Uploading a roster **for a run** from the page makes its numbers **validate** in
@@ -260,8 +263,8 @@ Baked into the requirements below (confirmed with the operator):
 - **SC8** — Selecting a **pre-recorded video file** as the source produces crossings on the
   same timeline as the live camera would, via the same pipeline (FR4a, D7).
 - **SC9** — Produced crossings are **on disk as they appear** (not only in memory), so
-  restarting the back-end and reloading the page still shows them, and the standalone viewer
-  can read them (FR8a, D8).
+  restarting the back-end and reloading the page still shows them, and setting the label to
+  an existing run shows that run's past results (FR8a, D8, D9).
 
 ## 9. Open Questions
 
@@ -287,8 +290,9 @@ Baked into the requirements below (confirmed with the operator):
   collection app** as a single served page (rename later if warranted). *For design:* exact
   serving shape (back-end serves the page vs static front-end calling it) and port layout.
 - **OQ7 — Persistence of crossings.** ✅ **Resolved (D8)** — crossings are **written to disk
-  as produced** (FR8a), append-safe alongside the frame manifest, surviving restart and
-  readable by the standalone viewer. *For design:* exact on-disk format/location.
+  as produced** (FR8a), append-safe alongside the frame manifest, surviving restart; past
+  runs are viewed in the unified page via the run's label (no standalone viewer remains).
+  *For design:* exact on-disk format/location.
 - **OQ8 — Mid-session roster replacement (from OQ1 follow-up).** ✅ **Resolved** — a new
   roster **for a run applies going forward**: it validates/enriches that run's frames processed
   **after** upload. Already-produced crossings are **not** retroactively re-validated or
