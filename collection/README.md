@@ -5,7 +5,7 @@ them to a local back-end that stores them and **runs the CV pipeline asynchronou
 deduplicated crossings appearing live in the same page below the camera view.
 
 One process, one port: `./run.sh` starts everything on **:8000**. See
-[`specs/live-pipeline/`](../specs/live-pipeline/) for requirements and design.
+[`specs/completed/live-pipeline/`](../specs/completed/live-pipeline/) for requirements and design.
 
 ---
 

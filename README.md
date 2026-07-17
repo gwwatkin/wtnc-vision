@@ -148,4 +148,4 @@ All tunable parameters live in `config.yaml`:
 - `specs/completed/collection/` — frame-collection app requirements, design, and tasks
 - `specs/completed/results-ux/` — original standalone results viewer (superseded by the
   live pipeline's unified page; kept for historical reference)
-- `specs/live-pipeline/` — live pipeline requirements, design, and tasks
+- `specs/completed/live-pipeline/` — live pipeline requirements, design, and tasks
