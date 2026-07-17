@@ -22,4 +22,6 @@ echo "Open  http://localhost:8000  in your browser.  Ctrl-C to stop."
 echo
 
 # One process: FastAPI back-end serves both the API and the static front-end page.
+# The backend package lives in collection/, so run from there.
+cd "$HERE"
 exec python -m backend
