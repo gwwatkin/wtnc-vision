@@ -16,6 +16,7 @@ validate:
   max_digits: 3               # confirmed: 1-3 digits, no leading zeros
   leading_zeros: false
   max_edit_distance: 1        # snap near-miss OCR read to nearest valid roster entry
+  accept_unmatched: true      # live pipeline: pass unsnappable reads through as-is (design §6.1/A3)
 score:
   confidence_threshold: 0.60  # below this → needs_review; 0.997 >> 0.60 on sample (large margin)
 output:

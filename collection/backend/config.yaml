@@ -3,12 +3,19 @@ server:
   port: 8000
   version: "0.1.0"
   allowed_origins:                # CORS: the front-end origin(s)
+    - http://localhost:8000
+    - http://127.0.0.1:8000
     - http://localhost:8001
     - http://127.0.0.1:8001
 storage:
-  dir: collected/
-  manifest_name: manifest.jsonl
+  dir: runs/                      # renamed from collected/ — holds runs/<safe_label>/ dirs
+  manifest_name: manifest.jsonl   # now written per run under runs/<safe_label>/
 limits:
   max_frame_bytes: 5242880        # 5 MB per frame
   allowed_content_types:
     - image/jpeg
+live:
+  enabled: true
+  cv_config: ../../config.yaml    # repo POC pipeline config
+  dedup_window_s: 5.0             # FR9/FR11 — collapse repeats within 5 s
+  statuses: [confident]           # FR7 — only confident reads become crossings

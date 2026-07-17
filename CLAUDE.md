@@ -37,5 +37,10 @@ When a feature ships, move its spec + tasks under `specs/completed/<name>/` (see
 
 ## Environment
 - **Python 3.12 only** (`/usr/bin/python3.12`) — the system default (3.14) lacks
-  paddle/torch wheels. Always work inside `.venv`: `source .venv/bin/activate`.
+  paddle/torch wheels. Always use the repo `.venv` — never system `python3`.
+- **Invoke venv binaries directly** for commands: `.venv/bin/python`, `.venv/bin/pytest`,
+  `.venv/bin/pip` (from the repo root; e.g. `../.venv/bin/python -m backend` from
+  `collection/`). Do **not** chain `source .venv/bin/activate && <cmd>` — compound
+  commands can't match the permission allowlist and trigger an approval prompt every
+  time. (`source .venv/bin/activate` alone is fine for an interactive shell.)
 - CPU-only; `opencv-python-headless`; no network at runtime beyond first-run model pulls.

@@ -1,5 +1,6 @@
-/* styles.css — Minimal layout for the frame collection front-end.
-   Dark theme; no framework; no build step. */
+/* styles.css — Layout for the unified collection + results front-end.
+   Dark theme; no framework; no build step.
+   Task5 adds card/sidebar detail styles. */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -26,14 +27,16 @@ h1 {
 
 /* ── Controls row ─────────────────────────────────────────────────────────── */
 
-#controls {
+#controls,
+#roster-controls,
+#run-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
   margin-bottom: 0.75rem;
   width: 100%;
-  max-width: 800px;
+  max-width: 960px;
 }
 
 label {
@@ -42,7 +45,8 @@ label {
 }
 
 select,
-input[type="text"] {
+input[type="text"],
+input[type="file"] {
   padding: 0.35rem 0.5rem;
   border-radius: 4px;
   border: 1px solid #555;
@@ -90,11 +94,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* ── Roster status feedback ──────────────────────────────────────────────── */
+
+#roster-status {
+  font-size: 0.85rem;
+  color: #aaa;
+  min-height: 1.2em;
+}
+
 /* ── Video preview ───────────────────────────────────────────────────────── */
 
 #preview {
   width: 100%;
-  max-width: 800px;
+  max-width: 960px;
   background: #000;
   border-radius: 6px;
   aspect-ratio: 16/9;
@@ -110,6 +122,287 @@ button:disabled {
   color: #aaa;
   min-height: 1.2em;
   width: 100%;
-  max-width: 800px;
-  word-break: break-all;   /* long stored paths wrap instead of overflowing */
+  max-width: 960px;
+  word-break: break-all;
+}
+
+/* ── Timeline + sidebar layout ───────────────────────────────────────────── */
+
+/*
+  Below the capture block the page splits into:
+    [timeline]  [sidebar]   (side by side on wide screens)
+  On narrow screens (<= 640px) the sidebar overlays the timeline.
+*/
+
+#timeline {
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 960px;
+  min-height: 8rem;
+  padding: 1rem;
+  background: #242424;
+  border-radius: 6px;
+  flex: 1;
+}
+
+#timeline .timeline-empty {
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Sidebar — hidden by default; task5 shows/hides via the `hidden` attribute */
+#sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 360px;
+  background: #1e1e1e;
+  border-left: 1px solid #333;
+  padding: 1rem;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+#sidebar[hidden] {
+  display: none;
+}
+
+#sidebar-close {
+  align-self: flex-end;
+  background: transparent;
+  color: #aaa;
+  font-size: 1.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #444;
+}
+
+#sidebar-close:hover {
+  background: #333;
+  color: #fff;
+}
+
+#sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* On narrower screens the sidebar overlays the timeline */
+@media (max-width: 640px) {
+  #sidebar {
+    width: 100%;
+  }
+}
+
+/* ── Timeline grid (task5) ───────────────────────────────────────────────── */
+/*
+  .timeline is the CSS class added by renderTimeline().  It turns #timeline
+  into a CSS grid with one column per lane, controlled by --lane-count.
+  Mirrors web/styles.css but adapted for the dark theme.
+*/
+
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(var(--lane-count, 1), 1fr);
+  gap: 0.75rem;
+  row-gap: 0.75rem;
+}
+
+/* Empty state message */
+.timeline__empty {
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 0;
+  grid-column: 1 / -1;
+}
+
+/* Lane header — sticky, one per column */
+.lane-header {
+  position: sticky;
+  top: 0;
+  background: #242424;
+  border-bottom: 2px solid #444;
+  padding: 0.6rem 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  color: #ccc;
+  z-index: 10;
+}
+
+/* Gap separator — spans all columns */
+.gap-separator {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 0;
+  color: #666;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.gap-separator::before,
+.gap-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #333;
+}
+
+/* ── Cards (task5) ───────────────────────────────────────────────────────── */
+
+.card {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.375rem;
+  padding: 0.65rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card__number {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5b9cf6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  line-height: 1.2;
+  word-wrap: break-word;
+}
+
+.card__meta {
+  font-size: 0.75rem;
+  color: #888;
+  line-height: 1.3;
+}
+
+/* Unknown rider — muted, dashed border */
+.card--unknown {
+  border-style: dashed;
+  border-color: #444;
+  background: #222;
+  opacity: 0.8;
+}
+
+.card--unknown .card__number {
+  color: #777;
+}
+
+.card--unknown .card__name {
+  color: #999;
+  font-weight: 500;
+}
+
+/* Selectable cards — pointer cursor + hover affordance */
+.card--selectable {
+  cursor: pointer;
+}
+
+.card--selectable:hover {
+  box-shadow: 0 2px 8px rgba(91, 156, 246, 0.25);
+  border-color: #5b5b7a;
+}
+
+/* Selected card — blue accent highlight */
+.card--selected {
+  border-color: #5b9cf6;
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(91, 156, 246, 0.25);
+}
+
+/* Responsive collapse: below 640px, single column */
+@media (max-width: 640px) {
+  .timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .lane-header {
+    display: none;
+  }
+
+  .gap-separator {
+    grid-column: 1;
+  }
+
+  /* Show category as a chip when collapsed */
+  .card::before {
+    content: attr(data-category);
+    display: inline-block;
+    background: #333;
+    color: #bbb;
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.2rem;
+  }
+
+  .card {
+    padding: 0.6rem;
+  }
+}
+
+/* ── Sidebar detail panel (task5 additions to task1's shell) ─────────────── */
+
+/* Image constrained to the sidebar panel width */
+.sidebar__image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  border: 1px solid #333;
+  background: #000;
+}
+
+.sidebar__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 0.25rem;
+}
+
+.sidebar__number {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5b9cf6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sidebar__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  line-height: 1.25;
+}
+
+.sidebar__category {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.sidebar__time {
+  font-size: 0.8rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
 }

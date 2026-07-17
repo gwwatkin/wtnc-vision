@@ -37,15 +37,20 @@ class FrameStore:
         return result
 
     def save(self, frame_bytes: bytes, meta: FrameMeta) -> StoredFrame:
-        """Write <root>/<safe_label>/<name>.jpg and append one manifest line.
+        """Write <root>/<safe_label>/collected/<name>.jpg and append one per-run manifest line.
+
+        Layout (design §5):
+          - Frame:    <root>/<safe>/collected/<filename_base>
+          - Manifest: <root>/<safe>/manifest.jsonl  (per-run, not global)
+          - filename field (root-relative): <safe>/collected/<filename_base>
 
         Returns a StoredFrame describing what was written.
         """
         safe = self.safe_label(meta.label)
 
-        # Ensure per-label sub-directory exists
-        label_dir = os.path.join(self.root, safe)
-        os.makedirs(label_dir, exist_ok=True)
+        # Ensure per-run collected/ sub-directory exists
+        collected_dir = os.path.join(self.root, safe, "collected")
+        os.makedirs(collected_dir, exist_ok=True)
 
         # server_ts: ISO-8601 UTC with millisecond precision, e.g. "2026-07-11T09:30:15.501Z"
         now_utc = datetime.now(timezone.utc)
@@ -55,15 +60,16 @@ class FrameStore:
         # filename: <safe>_<YYYYmmdd-HHMMSS-mmm>_<seq:06d>.jpg
         ts_part = now_utc.strftime("%Y%m%d-%H%M%S-") + f"{ms:03d}"
         filename_base = f"{safe}_{ts_part}_{meta.seq:06d}.jpg"
-        rel_path = f"{safe}/{filename_base}"
+        # Root-relative path: <safe>/collected/<filename_base> (README refinement 2)
+        rel_path = f"{safe}/collected/{filename_base}"
         abs_path = os.path.join(self.root, rel_path)
 
         # Write frame bytes verbatim — no re-encode (NFR1)
         with open(abs_path, "wb") as fh:
             fh.write(frame_bytes)
 
-        # Append one JSON line to manifest (append mode = restart-safe, FR13)
-        manifest_path = os.path.join(self.root, self.manifest_name)
+        # Append one JSON line to the per-run manifest (design §5)
+        manifest_path = os.path.join(self.root, safe, self.manifest_name)
         record = {
             "label": meta.label,
             "safe_label": safe,

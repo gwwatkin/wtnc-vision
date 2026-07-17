@@ -89,8 +89,9 @@ def write_annotated_image(
     results: list[CrossingResult],
     zone: dict,
     out_dir: str,
+    filename: str = "annotated.jpg",
 ) -> None:
-    """Draw crossing zone, rider boxes, and number labels; write annotated.jpg.
+    """Draw crossing zone, rider boxes, and number labels; write annotated image.
 
     Zone drawing:
       - Polygon zone: draws the polygon outline.
@@ -105,7 +106,8 @@ def write_annotated_image(
         image_bgr: Full input image (OpenCV BGR) — NOT modified in-place.
         results:   List of CrossingResult from pipeline.run().
         zone:      Resolved zone dict from zones.resolve_zone().
-        out_dir:   Output directory. Writes to <out_dir>/annotated.jpg.
+        out_dir:   Output directory. Writes to <out_dir>/<filename>.
+        filename:  Output filename (default: "annotated.jpg", preserving POC behaviour).
     """
     os.makedirs(out_dir, exist_ok=True)
     canvas = image_bgr.copy()
@@ -158,7 +160,7 @@ def write_annotated_image(
             _FONT, _FONT_SCALE, color, _FONT_THICKNESS, lineType=cv2.LINE_AA,
         )
 
-    out_path = os.path.join(out_dir, "annotated.jpg")
+    out_path = os.path.join(out_dir, filename)
     cv2.imwrite(out_path, canvas)
 
 

@@ -19,10 +19,12 @@ _CONFIG_PATH = os.path.join(_HERE, "config.yaml")
 
 def main() -> None:
     from .config import load_config
+    from .live_config import load_live_config
     from .app import create_app
 
     cfg = load_config(_CONFIG_PATH)
-    app = create_app(cfg)
+    live = load_live_config(_CONFIG_PATH)
+    app = create_app(cfg, live)
 
     uvicorn.run(app, host=cfg.host, port=cfg.port)
 

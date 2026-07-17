@@ -1,11 +1,13 @@
-"""Tests for the collection back-end — Task 2 scope.
+"""Tests for the collection back-end — Task 3 scope.
 
 Covers:
   - GET /health (kept from task1)
   - FrameStore.safe_label edge-cases
-  - POST /frames happy path: 201, file written, bytes match, manifest line
+  - POST /frames happy path: 201, file written under <safe>/collected/, bytes match,
+    per-run manifest line, "run" field in response
   - POST /frames error paths: 415, 400 (missing/blank label, bad seq), 413
-  - Restart-safe: two saves → two manifest lines; existing files untouched
+  - Two labels → two run dirs, two separate manifests, no global manifest
+  - Restart-safe: two saves to one label → two lines in that run's manifest
 """
 from __future__ import annotations
 
@@ -128,7 +130,7 @@ class TestSafeLabel:
 
 
 # ---------------------------------------------------------------------------
-# POST /frames — happy path
+# POST /frames — happy path (per-run layout)
 # ---------------------------------------------------------------------------
 
 def test_post_frames_happy_path(tmp_client):
@@ -151,28 +153,40 @@ def test_post_frames_happy_path(tmp_client):
     assert "server_ts" in body
     assert "stored" in body
 
-    # Stored path is relative to root and starts with safe_label/
+    # Response must include the safe run id (task1 additive field)
+    assert body["run"] == "101"
+
+    # Stored path is root-relative: <safe>/collected/<filename>
     stored_rel = body["stored"]
-    assert stored_rel.startswith("101/101_")
+    assert stored_rel.startswith("101/collected/101_"), (
+        f"expected '101/collected/101_...' prefix, got {stored_rel!r}"
+    )
     assert stored_rel.endswith(".jpg")
 
-    # File must exist under tmp_path and have the right bytes
+    # File must exist at <tmp_path>/<safe>/collected/<name>.jpg
     abs_stored = os.path.join(str(tmp_path), stored_rel)
-    assert os.path.isfile(abs_stored)
+    assert os.path.isfile(abs_stored), f"frame not found at {abs_stored}"
     with open(abs_stored, "rb") as fh:
         on_disk = fh.read()
     assert on_disk == _TINY_JPEG
 
-    # Manifest must have exactly one line with the expected fields
-    manifest_path = os.path.join(str(tmp_path), "manifest.jsonl")
-    assert os.path.isfile(manifest_path)
+    # Per-run manifest at <tmp>/101/manifest.jsonl (not a global manifest)
+    manifest_path = os.path.join(str(tmp_path), "101", "manifest.jsonl")
+    assert os.path.isfile(manifest_path), f"per-run manifest not found at {manifest_path}"
+
+    # No global manifest at storage root
+    global_manifest = os.path.join(str(tmp_path), "manifest.jsonl")
+    assert not os.path.isfile(global_manifest), "global manifest must not exist"
+
     with open(manifest_path, encoding="utf-8") as fh:
         lines = [l.strip() for l in fh if l.strip()]
     assert len(lines) == 1
     record = json.loads(lines[0])
     assert record["label"] == "101"
     assert record["safe_label"] == "101"
+    # filename is root-relative: <safe>/collected/<name>.jpg (README refinement 2)
     assert record["filename"] == stored_rel
+    assert record["filename"].startswith("101/collected/")
     assert record["seq"] == 0
     assert record["client_ts"] == "2026-07-11T09:30:15.482Z"
     assert record["bytes"] == len(_TINY_JPEG)
@@ -196,9 +210,10 @@ def test_post_frames_with_session_id(tmp_client):
     assert resp.status_code == 201
     body = resp.json()
     assert body["seq"] == 5
+    assert body["run"] == "202"
 
-    manifest_path = os.path.join(str(tmp_path), "manifest.jsonl")
-    # Find the line for this request
+    # Per-run manifest for label "202"
+    manifest_path = os.path.join(str(tmp_path), "202", "manifest.jsonl")
     with open(manifest_path, encoding="utf-8") as fh:
         records = [json.loads(l) for l in fh if l.strip()]
     matching = [r for r in records if r["label"] == "202"]
@@ -347,7 +362,63 @@ def test_post_frames_413_oversized(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Restart-safe: two saves append two manifest lines; existing files untouched
+# Two labels → two run dirs, two separate manifests, no global manifest
+# ---------------------------------------------------------------------------
+
+def test_two_labels_two_run_dirs_two_manifests(tmp_path):
+    """Two captures with different labels must produce two isolated run dirs
+    each with their own manifest — no global manifest at the storage root."""
+    cfg = _make_config(str(tmp_path))
+    app = create_app(cfg)
+    with TestClient(app) as client:
+        for label, seq in [("alpha", "0"), ("beta", "0")]:
+            resp = client.post(
+                "/frames",
+                files={"image": ("frame.jpg", io.BytesIO(_TINY_JPEG), "image/jpeg")},
+                data={
+                    "label": label,
+                    "client_ts": "2026-07-11T09:30:15.000Z",
+                    "seq": seq,
+                },
+            )
+            assert resp.status_code == 201
+            assert resp.json()["run"] == label
+
+    # Each label has its own run dir and manifest
+    alpha_manifest = os.path.join(str(tmp_path), "alpha", "manifest.jsonl")
+    beta_manifest = os.path.join(str(tmp_path), "beta", "manifest.jsonl")
+    assert os.path.isfile(alpha_manifest), "alpha run manifest missing"
+    assert os.path.isfile(beta_manifest), "beta run manifest missing"
+
+    # Each manifest has exactly one line for its own run only
+    with open(alpha_manifest, encoding="utf-8") as fh:
+        alpha_records = [json.loads(l) for l in fh if l.strip()]
+    assert len(alpha_records) == 1
+    assert alpha_records[0]["safe_label"] == "alpha"
+
+    with open(beta_manifest, encoding="utf-8") as fh:
+        beta_records = [json.loads(l) for l in fh if l.strip()]
+    assert len(beta_records) == 1
+    assert beta_records[0]["safe_label"] == "beta"
+
+    # No global manifest at storage root
+    global_manifest = os.path.join(str(tmp_path), "manifest.jsonl")
+    assert not os.path.isfile(global_manifest), "global manifest must not exist"
+
+    # Frame files are in <safe>/collected/
+    alpha_collected = os.path.join(str(tmp_path), "alpha", "collected")
+    beta_collected = os.path.join(str(tmp_path), "beta", "collected")
+    assert os.path.isdir(alpha_collected), "alpha/collected/ dir missing"
+    assert os.path.isdir(beta_collected), "beta/collected/ dir missing"
+
+    alpha_files = [f for f in os.listdir(alpha_collected) if f.endswith(".jpg")]
+    beta_files = [f for f in os.listdir(beta_collected) if f.endswith(".jpg")]
+    assert len(alpha_files) == 1
+    assert len(beta_files) == 1
+
+
+# ---------------------------------------------------------------------------
+# Restart-safe: two saves append two lines to that run's manifest
 # ---------------------------------------------------------------------------
 
 def test_restart_safe_two_saves(tmp_client):
@@ -365,7 +436,9 @@ def test_restart_safe_two_saves(tmp_client):
         )
         assert resp.status_code == 201
 
-    manifest_path = os.path.join(str(tmp_path), "manifest.jsonl")
+    # Per-run manifest for "restart-test" (safe_label = "restart-test")
+    manifest_path = os.path.join(str(tmp_path), "restart-test", "manifest.jsonl")
+    assert os.path.isfile(manifest_path), f"per-run manifest missing at {manifest_path}"
     with open(manifest_path, encoding="utf-8") as fh:
         lines = [l.strip() for l in fh if l.strip() and json.loads(l)["label"] == "restart-test"]
     assert len(lines) == 2
@@ -374,13 +447,14 @@ def test_restart_safe_two_saves(tmp_client):
     for line in lines:
         record = json.loads(line)
         abs_path = os.path.join(str(tmp_path), record["filename"])
-        assert os.path.isfile(abs_path)
+        assert os.path.isfile(abs_path), f"stored frame missing at {abs_path}"
         with open(abs_path, "rb") as fh:
             assert fh.read() == _TINY_JPEG
 
 
 def test_restart_safe_existing_files_untouched(tmp_path):
-    """Simulate a restart: create a second FrameStore on the same root; prior data intact."""
+    """Simulate a restart: create a second FrameStore on the same root; prior data intact.
+    Each label's manifest is per-run; there is no global manifest."""
     cfg = _make_config(str(tmp_path))
     app1 = create_app(cfg)
     with TestClient(app1) as c1:
@@ -391,6 +465,7 @@ def test_restart_safe_existing_files_untouched(tmp_path):
         )
         assert r.status_code == 201
         first_stored = r.json()["stored"]
+        assert "before-restart/collected/" in first_stored
 
     # "Restart" — new app instance, same storage root
     app2 = create_app(cfg)
@@ -401,18 +476,32 @@ def test_restart_safe_existing_files_untouched(tmp_path):
             data={"label": "after-restart", "client_ts": "2026-01-01T00:00:01.000Z", "seq": "0"},
         )
         assert r2.status_code == 201
+        second_stored = r2.json()["stored"]
+        assert "after-restart/collected/" in second_stored
 
-    # Both files exist
+    # Both files exist on disk
     assert os.path.isfile(os.path.join(str(tmp_path), first_stored))
+    assert os.path.isfile(os.path.join(str(tmp_path), second_stored))
 
-    # Manifest has two lines
-    manifest_path = os.path.join(str(tmp_path), "manifest.jsonl")
-    with open(manifest_path, encoding="utf-8") as fh:
-        lines = [l.strip() for l in fh if l.strip()]
-    assert len(lines) == 2
-    labels = {json.loads(l)["label"] for l in lines}
-    assert "before-restart" in labels
-    assert "after-restart" in labels
+    # Each label has its own per-run manifest with one line
+    before_manifest = os.path.join(str(tmp_path), "before-restart", "manifest.jsonl")
+    after_manifest = os.path.join(str(tmp_path), "after-restart", "manifest.jsonl")
+    assert os.path.isfile(before_manifest), "before-restart manifest missing"
+    assert os.path.isfile(after_manifest), "after-restart manifest missing"
+
+    with open(before_manifest, encoding="utf-8") as fh:
+        before_lines = [l.strip() for l in fh if l.strip()]
+    assert len(before_lines) == 1
+    assert json.loads(before_lines[0])["label"] == "before-restart"
+
+    with open(after_manifest, encoding="utf-8") as fh:
+        after_lines = [l.strip() for l in fh if l.strip()]
+    assert len(after_lines) == 1
+    assert json.loads(after_lines[0])["label"] == "after-restart"
+
+    # No global manifest at storage root
+    global_manifest = os.path.join(str(tmp_path), "manifest.jsonl")
+    assert not os.path.isfile(global_manifest), "global manifest must not exist"
 
 
 # ---------------------------------------------------------------------------
@@ -439,6 +528,7 @@ def test_stored_bytes_identical_to_source(tmp_path):
         )
     assert resp.status_code == 201
     stored_rel = resp.json()["stored"]
+    assert "101/collected/" in stored_rel
 
     abs_stored = os.path.join(str(tmp_path), stored_rel)
     with open(abs_stored, "rb") as fh:

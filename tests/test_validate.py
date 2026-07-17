@@ -329,3 +329,107 @@ class TestLoadRoster:
         """Non-existent file path returns None gracefully."""
         cfg = {"validate": {"roster": "/tmp/no_such_roster_file_12345.txt"}}
         assert load_roster(cfg) is None
+
+
+# ---------------------------------------------------------------------------
+# Tests 11-14: accept_unmatched flag (design §6.1 note / task2)
+# ---------------------------------------------------------------------------
+
+def _make_cfg_unmatched(roster=None, accept_unmatched: bool = False, max_edit_distance: int = 1):
+    """Build a cfg dict with accept_unmatched control."""
+    return {
+        "validate": {
+            "roster": roster,
+            "min_digits": 1,
+            "max_digits": 3,
+            "leading_zeros": False,
+            "max_edit_distance": max_edit_distance,
+            "accept_unmatched": accept_unmatched,
+        },
+        "score": {"confidence_threshold": 0.60},
+    }
+
+
+class TestAcceptUnmatchedFlag:
+    """Design §6.1: accept_unmatched=true passes step-4c reads through as-is."""
+
+    # Test 11: no match within budget, flag ON → accepted as-is, full confidence
+    def test_no_match_within_budget_flag_on(self):
+        """
+        "577" vs roster {"101","102","103"}, max_edit=1.
+        All distances ≥ 3 → step 4c; accept_unmatched=True → accepted as-is.
+        """
+        roster = {"101", "102", "103"}
+        cfg = _make_cfg_unmatched(roster=roster, accept_unmatched=True)
+        results = [OcrResult(text="577", ocr_conf=0.88, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number == "577", f"Expected '577' accepted as-is, got {number!r}"
+        assert raw_text == "577"
+        assert conf == pytest.approx(0.88)
+
+    # Test 12: ambiguous nearest entries, flag ON → accepted as-is
+    def test_ambiguous_snap_flag_on(self):
+        """
+        "108" vs roster {"101","102","103"}, max_edit=1.
+        Three equidistant entries at dist 1 → ambiguous → step 4c;
+        accept_unmatched=True → accepted as-is (best_digits="108", no penalty).
+        """
+        roster = {"101", "102", "103"}
+        cfg = _make_cfg_unmatched(roster=roster, accept_unmatched=True)
+        results = [OcrResult(text="108", ocr_conf=0.75, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number == "108", f"Expected '108' accepted as-is (ambiguous snap, flag on), got {number!r}"
+        assert raw_text == "108"
+        assert conf == pytest.approx(0.75)
+
+    # Test 13 (regression): flag OFF/absent → both still rejected
+    def test_no_match_flag_off_still_rejected(self):
+        """Flag absent → POC behaviour: no-match within budget is rejected."""
+        roster = {"101", "102", "103"}
+        cfg = _make_cfg_unmatched(roster=roster, accept_unmatched=False)
+        results = [OcrResult(text="577", ocr_conf=0.88, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number is None, "Flag off: should still reject 577"
+
+    def test_ambiguous_flag_off_still_rejected(self):
+        """Flag absent → POC behaviour: ambiguous snap is rejected."""
+        roster = {"101", "102", "103"}
+        cfg = _make_cfg_unmatched(roster=roster, accept_unmatched=False)
+        results = [OcrResult(text="108", ocr_conf=0.75, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number is None, "Flag off: should still reject ambiguous snap"
+
+    def test_flag_key_absent_still_rejected(self):
+        """Key entirely absent defaults to False → rejected."""
+        roster = {"101", "102", "103"}
+        cfg = {
+            "validate": {
+                "roster": None,
+                "min_digits": 1,
+                "max_digits": 3,
+                "leading_zeros": False,
+                "max_edit_distance": 1,
+                # no accept_unmatched key
+            },
+            "score": {"confidence_threshold": 0.60},
+        }
+        results = [OcrResult(text="577", ocr_conf=0.88, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number is None, "Key absent defaults to False → rejected"
+
+    # Test 14: unique snap still snaps (and penalizes) with the flag on
+    def test_unique_snap_still_snaps_with_flag_on(self):
+        """
+        Flag on does NOT affect step 4b (unique snap).
+        "102" vs roster {"101","150","200"} → unique nearest "101" at dist 1 → snaps.
+        Penalty still applied; flag only affects step 4c.
+        """
+        roster = {"101", "150", "200"}
+        cfg = _make_cfg_unmatched(roster=roster, accept_unmatched=True)
+        results = [OcrResult(text="102", ocr_conf=0.90, box=DUMMY_BOX)]
+        number, raw_text, conf = validate(results, roster, cfg)
+        assert number == "101", f"Expected snap to '101', got {number!r}"
+        assert raw_text == "102"
+        assert conf == pytest.approx(0.90 - SNAP_PENALTY), (
+            "Snap penalty must still apply with accept_unmatched=True"
+        )

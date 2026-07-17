@@ -180,5 +180,7 @@ def validate(
         penalized_conf = max(0.0, best_conf - SNAP_PENALTY)
         return (snapped_number, best_raw, penalized_conf)
 
-    # 4c. Ambiguous or no match within budget → reject
+    # 4c. Ambiguous or no match within budget → reject (or accept as-is if flag on)
+    if validate_cfg.get("accept_unmatched"):
+        return (best_digits, best_raw, best_conf)
     return (None, best_raw, best_conf)

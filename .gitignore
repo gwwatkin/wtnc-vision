@@ -1,6 +1,7 @@
 .venv/
 out/
 collected/
+runs/
 *.pt
 __pycache__/
 *.pyc
