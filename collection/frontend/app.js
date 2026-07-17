@@ -29,6 +29,7 @@
   const toggleBtn       = document.getElementById('toggle-btn');
   const statusEl        = document.getElementById('status');
   const sourceSelectEl  = document.getElementById('source-select');
+  const cameraLabelEl   = document.querySelector('label[for="camera-select"]');
   const videoFileEl     = document.getElementById('video-file');
   const rosterFileEl    = document.getElementById('roster-file');
   const rosterUploadBtn = document.getElementById('roster-upload-btn');
@@ -90,14 +91,18 @@
    */
   function applySourceUi(source) {
     if (source === 'camera') {
-      videoFileEl.hidden   = true;
-      videoFileEl.disabled = true;
-      selectEl.disabled    = false;
+      videoFileEl.hidden    = true;
+      videoFileEl.disabled  = true;
+      selectEl.disabled     = false;
+      selectEl.hidden       = false;
+      cameraLabelEl.hidden  = false;
     } else {
       // video
-      videoFileEl.hidden   = false;
-      videoFileEl.disabled = false;
-      selectEl.disabled    = true;
+      videoFileEl.hidden    = false;
+      videoFileEl.disabled  = false;
+      selectEl.disabled     = true;
+      selectEl.hidden       = true;
+      cameraLabelEl.hidden  = true;
     }
   }
 
