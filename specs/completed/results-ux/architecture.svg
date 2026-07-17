@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="620" viewBox="0 0 920 620" font-family="-apple-system, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <style>
+      .lbl   { font-size: 13px; fill: #1a1a1a; }
+      .sub   { font-size: 11px; fill: #555; }
+      .mod   { font-size: 13px; font-weight: 600; fill: #0b3d5c; }
+      .file  { font-size: 11px; fill: #0b6; font-family: ui-monospace, Menlo, monospace; }
+      .title { font-size: 15px; font-weight: 700; fill: #111; }
+      .edge  { stroke: #555; stroke-width: 1.5; fill: none; }
+      .box   { fill: #f7fbfd; stroke: #7fb3cc; stroke-width: 1.5; rx: 8; }
+      .io    { fill: #fff7ef; stroke: #d9a05b; stroke-width: 1.5; rx: 8; }
+      .out   { fill: #f2fbf4; stroke: #7cc79a; stroke-width: 1.5; rx: 8; }
+    </style>
+  </defs>
+
+  <text x="30" y="34" class="title">Race Results Timeline — data flow &amp; module ownership</text>
+
+  <!-- Inputs -->
+  <rect class="io" x="60"  y="70" width="150" height="60" rx="8"/>
+  <text x="135" y="95"  class="lbl" text-anchor="middle">crossings.csv</text>
+  <text x="135" y="113" class="sub" text-anchor="middle">time, race_number</text>
+
+  <rect class="io" x="60"  y="150" width="150" height="60" rx="8"/>
+  <text x="135" y="175" class="lbl" text-anchor="middle">roster.csv</text>
+  <text x="135" y="193" class="sub" text-anchor="middle">race_number, name, category</text>
+
+  <!-- csv.js -->
+  <rect class="box" x="300" y="90" width="170" height="100" rx="8"/>
+  <text x="385" y="118" class="mod" text-anchor="middle">csv.js</text>
+  <text x="385" y="140" class="sub" text-anchor="middle">parseCsv(text)</text>
+  <text x="385" y="158" class="sub" text-anchor="middle">RFC4180 quoted fields</text>
+  <text x="385" y="178" class="file" text-anchor="middle">→ string[][]</text>
+
+  <!-- data.js -->
+  <rect class="box" x="300" y="240" width="330" height="210" rx="8"/>
+  <text x="465" y="268" class="mod" text-anchor="middle">data.js  (pure transforms)</text>
+  <text x="320" y="296" class="sub">parseCrossings(rows) → Crossing[]</text>
+  <text x="320" y="318" class="sub">parseRoster(rows) → Map&lt;number, RosterEntry&gt;</text>
+  <text x="320" y="340" class="sub">mergeResults(crossings, roster) → Result[]</text>
+  <text x="320" y="362" class="sub">sortDescending(results) → Result[]</text>
+  <text x="320" y="384" class="sub">groupIntoPacks(results, gapSeconds) → Pack[]</text>
+  <text x="320" y="406" class="sub">computeLanes(results, opts) → Lane[]</text>
+  <text x="320" y="432" class="file">newest-first · &gt;gap ⇒ separator · lane = category</text>
+
+  <!-- render.js -->
+  <rect class="box" x="680" y="240" width="190" height="130" rx="8"/>
+  <text x="775" y="268" class="mod" text-anchor="middle">render.js</text>
+  <text x="775" y="292" class="sub" text-anchor="middle">renderTimeline(</text>
+  <text x="775" y="309" class="sub" text-anchor="middle">root, packs, lanes)</text>
+  <text x="775" y="333" class="sub" text-anchor="middle">CSS-grid lanes,</text>
+  <text x="775" y="350" class="sub" text-anchor="middle">time rows, gap rows</text>
+
+  <!-- output -->
+  <rect class="out" x="680" y="410" width="190" height="90" rx="8"/>
+  <text x="775" y="438" class="mod" text-anchor="middle">index.html DOM</text>
+  <text x="775" y="460" class="sub" text-anchor="middle">side-by-side lanes,</text>
+  <text x="775" y="478" class="sub" text-anchor="middle">shared time axis</text>
+
+  <!-- app.js orchestrator -->
+  <rect class="box" x="300" y="500" width="570" height="80" rx="8"/>
+  <text x="585" y="528" class="mod" text-anchor="middle">app.js — orchestration &amp; polling loop</text>
+  <text x="585" y="551" class="sub" text-anchor="middle">loadData(config) → merge/sort/group/lanes → renderTimeline · re-fetch every refreshMs</text>
+  <text x="585" y="571" class="file" text-anchor="middle">config: crossingsUrl, rosterUrl, gapSeconds, refreshMs, laneOrder</text>
+
+  <!-- edges -->
+  <path class="edge" d="M210,100 L300,120" marker-end="url(#arrow)"/>
+  <path class="edge" d="M210,180 L300,150" marker-end="url(#arrow)"/>
+  <path class="edge" d="M385,190 L440,240" marker-end="url(#arrow)"/>
+  <path class="edge" d="M630,330 L680,320" marker-end="url(#arrow)"/>
+  <path class="edge" d="M775,370 L775,410" marker-end="url(#arrow)"/>
+
+  <!-- app.js control arrows (dashed) -->
+  <path class="edge" style="stroke-dasharray:5 4" d="M400,500 L440,450" marker-end="url(#arrow)"/>
+  <path class="edge" style="stroke-dasharray:5 4" d="M760,500 L770,370" marker-end="url(#arrow)"/>
+  <text x="250" y="470" class="sub" transform="rotate(-90 250 470)">poll / re-render</text>
+</svg>

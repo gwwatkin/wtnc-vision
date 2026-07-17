@@ -1,0 +1,14 @@
+server:
+  host: 127.0.0.1
+  port: 8000
+  version: "0.1.0"
+  allowed_origins:                # CORS: the front-end origin(s)
+    - http://localhost:8001
+    - http://127.0.0.1:8001
+storage:
+  dir: collected/
+  manifest_name: manifest.jsonl
+limits:
+  max_frame_bytes: 5242880        # 5 MB per frame
+  allowed_content_types:
+    - image/jpeg

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 320" font-family="sans-serif" font-size="13">
+  <rect x="0" y="0" width="920" height="320" fill="#ffffff"/>
+  <text x="460" y="26" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">Frame Collection — data flow (one device, two localhost ports)</text>
+
+  <!-- Browser -->
+  <rect x="20" y="50" width="240" height="230" rx="8" fill="#eef5ff" stroke="#3b74c4"/>
+  <text x="140" y="72" text-anchor="middle" font-weight="bold" fill="#1f4e8c">Browser · static · :8001</text>
+  <rect x="40" y="86" width="200" height="30" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="140" y="106" text-anchor="middle">getUserMedia → preview</text>
+  <rect x="40" y="122" width="200" height="30" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="140" y="142" text-anchor="middle">camera picker + label</text>
+  <rect x="40" y="158" width="200" height="40" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="140" y="176" text-anchor="middle">capture loop @ N fps</text>
+  <text x="140" y="191" text-anchor="middle" font-size="11" fill="#666">canvas.toBlob(jpeg)</text>
+  <rect x="40" y="204" width="200" height="30" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="140" y="224" text-anchor="middle">status line</text>
+
+  <!-- Browser <-> Back-end arrows -->
+  <line x1="260" y1="150" x2="356" y2="150" stroke="#333" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="308" y="138" text-anchor="middle" font-size="11">POST /frames</text>
+  <text x="308" y="165" text-anchor="middle" font-size="11" fill="#666">multipart</text>
+  <line x1="356" y1="200" x2="260" y2="200" stroke="#999" stroke-width="1.5" marker-end="url(#arrg)"/>
+  <text x="308" y="216" text-anchor="middle" font-size="11" fill="#888">201 / error</text>
+
+  <!-- Back-end -->
+  <rect x="360" y="50" width="250" height="230" rx="8" fill="#eefaef" stroke="#3a9d4a"/>
+  <text x="485" y="72" text-anchor="middle" font-weight="bold" fill="#1f6b2c">Back-end · FastAPI · :8000</text>
+  <rect x="380" y="86" width="210" height="28" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="485" y="105" text-anchor="middle">1. validate type / size</text>
+  <rect x="380" y="120" width="210" height="28" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="485" y="139" text-anchor="middle">2. safe_label → filename</text>
+  <rect x="380" y="154" width="210" height="28" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="485" y="173" text-anchor="middle">3. write JPEG bytes</text>
+  <rect x="380" y="188" width="210" height="28" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="485" y="207" text-anchor="middle">4. append manifest.jsonl</text>
+  <rect x="380" y="222" width="210" height="28" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="485" y="241" text-anchor="middle">GET /health</text>
+
+  <!-- Back-end -> Disk -->
+  <line x1="610" y1="100" x2="695" y2="100" stroke="#333" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Disk -->
+  <rect x="700" y="62" width="200" height="76" rx="8" fill="#fff7e6" stroke="#c98a1b"/>
+  <text x="800" y="84" text-anchor="middle" font-weight="bold" fill="#8a5a00">Disk</text>
+  <text x="800" y="105" text-anchor="middle" font-size="11">collected/&lt;label&gt;/*.jpg</text>
+  <text x="800" y="123" text-anchor="middle" font-size="11">collected/manifest.jsonl</text>
+
+  <!-- Future sink (dashed elbow from back-end) -->
+  <path d="M610,225 H655 V244 H695" fill="none" stroke="#7a4fbf" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arrp)"/>
+  <rect x="700" y="210" width="200" height="70" rx="8" fill="#f3eefc" stroke="#7a4fbf" stroke-dasharray="5 3"/>
+  <text x="800" y="238" text-anchor="middle" font-size="11" fill="#5a3596">later: live processing</text>
+  <text x="800" y="258" text-anchor="middle" font-size="11" fill="#5a3596">pipeline.run(image_bgr, cfg)</text>
+
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#333"/></marker>
+    <marker id="arrg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker>
+    <marker id="arrp" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a4fbf"/></marker>
+  </defs>
+</svg>

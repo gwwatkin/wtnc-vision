@@ -1,0 +1,6 @@
+ultralytics
+paddleocr
+paddlepaddle
+opencv-python-headless
+numpy
+pyyaml

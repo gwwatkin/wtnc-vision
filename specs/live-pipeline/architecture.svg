@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" font-family="sans-serif" font-size="12.5">
+  <rect x="0" y="0" width="980" height="560" fill="#ffffff"/>
+  <text x="490" y="26" text-anchor="middle" font-size="15" font-weight="bold" fill="#333">Live Pipeline — one process, one port (:8000): capture · process · view</text>
+
+  <!-- ============ Browser ============ -->
+  <rect x="18" y="46" width="270" height="470" rx="8" fill="#eef5ff" stroke="#3b74c4"/>
+  <text x="153" y="68" text-anchor="middle" font-weight="bold" fill="#1f4e8c">Browser (served by back-end)</text>
+
+  <!-- source selector -->
+  <rect x="34" y="80" width="238" height="52" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="153" y="99" text-anchor="middle">source: ◉ live camera  ○ video file (D7)</text>
+  <text x="153" y="118" text-anchor="middle" font-size="11" fill="#666">getUserMedia OR &lt;video&gt; → &lt;canvas&gt;</text>
+
+  <!-- capture loop -->
+  <rect x="34" y="140" width="238" height="40" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="153" y="158" text-anchor="middle">capture loop @ N fps</text>
+  <text x="153" y="173" text-anchor="middle" font-size="11" fill="#666">canvas.toBlob(jpeg) + client_ts</text>
+
+  <!-- roster upload -->
+  <rect x="34" y="188" width="238" height="34" rx="4" fill="#fffbe9" stroke="#c98a1b"/>
+  <text x="153" y="209" text-anchor="middle">roster upload button (FR16)</text>
+
+  <!-- timeline -->
+  <rect x="34" y="238" width="238" height="150" rx="4" fill="#ffffff" stroke="#3b74c4"/>
+  <text x="153" y="258" text-anchor="middle" font-weight="bold">results timeline (below camera)</text>
+  <text x="153" y="275" text-anchor="middle" font-size="11" fill="#666">reuses data.js / render.js</text>
+  <rect x="48" y="286" width="96" height="90" rx="3" fill="#f4f8ff" stroke="#9db8de"/>
+  <text x="96" y="303" text-anchor="middle" font-size="11">Cat 3</text>
+  <rect x="56" y="312" width="80" height="24" rx="3" fill="#ffffff" stroke="#9db8de"/>
+  <text x="96" y="328" text-anchor="middle" font-size="10.5">#101 · click</text>
+  <rect x="150" y="286" width="110" height="90" rx="3" fill="#f4f8ff" stroke="#9db8de"/>
+  <text x="205" y="303" text-anchor="middle" font-size="11">Unknown</text>
+
+  <!-- sidebar -->
+  <rect x="34" y="396" width="238" height="106" rx="4" fill="#f3eefc" stroke="#7a4fbf"/>
+  <text x="153" y="416" text-anchor="middle" font-weight="bold" fill="#5a3596">sidebar (D2) — click a result</text>
+  <rect x="48" y="424" width="90" height="66" rx="3" fill="#ffffff" stroke="#7a4fbf"/>
+  <text x="93" y="460" text-anchor="middle" font-size="10.5" fill="#5a3596">annotated</text>
+  <text x="93" y="474" text-anchor="middle" font-size="10.5" fill="#5a3596">frame (D3)</text>
+  <text x="205" y="446" text-anchor="middle" font-size="11">#101 · Name</text>
+  <text x="205" y="464" text-anchor="middle" font-size="11">Cat 3 · 14:47:00</text>
+
+  <!-- ============ Back-end ============ -->
+  <rect x="366" y="46" width="330" height="470" rx="8" fill="#eefaef" stroke="#3a9d4a"/>
+  <text x="531" y="68" text-anchor="middle" font-weight="bold" fill="#1f6b2c">Back-end · FastAPI + worker · :8000</text>
+
+  <!-- POST /frames handler -->
+  <rect x="382" y="80" width="298" height="60" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="531" y="99" text-anchor="middle" font-weight="bold">POST /frames  (validate — unchanged)</text>
+  <text x="531" y="117" text-anchor="middle" font-size="11" fill="#666">sink 1: FrameStore.save (disk + manifest)</text>
+  <text x="531" y="132" text-anchor="middle" font-size="11" fill="#666">sink 2: enqueue(stored ref)  → non-blocking</text>
+
+  <!-- queue -->
+  <rect x="382" y="150" width="298" height="30" rx="4" fill="#fdf6ff" stroke="#7a4fbf"/>
+  <text x="531" y="170" text-anchor="middle" fill="#5a3596">asyncio.Queue — bounded, in-order (D5)</text>
+
+  <!-- worker -->
+  <rect x="382" y="190" width="298" height="150" rx="6" fill="#f6fff6" stroke="#3a9d4a"/>
+  <text x="531" y="209" text-anchor="middle" font-weight="bold" fill="#1f6b2c">single worker (asyncio.to_thread)</text>
+  <rect x="396" y="216" width="270" height="24" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="531" y="232" text-anchor="middle" font-size="11">cv2.imread → pipeline.run(img, cfg)  (reused)</text>
+  <rect x="396" y="244" width="270" height="24" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="531" y="260" text-anchor="middle" font-size="11">keep status == confident  (FR7)</text>
+  <rect x="396" y="272" width="270" height="24" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="531" y="288" text-anchor="middle" font-size="11">dedup per run, window = W s  (D4)</text>
+  <rect x="396" y="300" width="270" height="30" rx="3" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="531" y="315" text-anchor="middle" font-size="11">write annotated frame (best conf, D3);</text>
+  <text x="531" y="327" text-anchor="middle" font-size="11">persist crossing (D8)</text>
+
+  <!-- other routes -->
+  <rect x="382" y="350" width="145" height="72" rx="4" fill="#fffbe9" stroke="#c98a1b"/>
+  <text x="454" y="369" text-anchor="middle" font-weight="bold" fill="#8a5a00">POST /roster</text>
+  <text x="454" y="386" text-anchor="middle" font-size="10.5">parse csv → set run roster</text>
+  <text x="454" y="401" text-anchor="middle" font-size="10.5">validation + naming</text>
+  <text x="454" y="416" text-anchor="middle" font-size="10.5">(one source, D6)</text>
+
+  <rect x="535" y="350" width="145" height="72" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="607" y="369" text-anchor="middle" font-weight="bold">GET /results?run</text>
+  <text x="607" y="386" text-anchor="middle" font-size="10.5">enriched crossings</text>
+  <text x="607" y="401" text-anchor="middle" font-size="10.5">GET /crossings/{id}</text>
+  <text x="607" y="416" text-anchor="middle" font-size="10.5">/image · GET /health</text>
+
+  <rect x="382" y="432" width="298" height="30" rx="4" fill="#eef5ff" stroke="#3b74c4"/>
+  <text x="531" y="452" text-anchor="middle">StaticFiles: serves the unified page (OQ6)</text>
+
+  <text x="531" y="486" text-anchor="middle" font-size="11" fill="#666">same Python 3.12 venv ⇒ `from rider_id import pipeline`</text>
+  <text x="531" y="503" text-anchor="middle" font-size="11" fill="#666">live processing toggle in config (FR21 / SC6)</text>
+
+  <!-- ============ Disk ============ -->
+  <rect x="742" y="46" width="222" height="470" rx="8" fill="#fff7e6" stroke="#c98a1b"/>
+  <text x="853" y="68" text-anchor="middle" font-weight="bold" fill="#8a5a00">Disk — run/&lt;label&gt;/ (one run)</text>
+  <rect x="758" y="84" width="190" height="60" rx="4" fill="#ffffff" stroke="#c98a1b"/>
+  <text x="853" y="104" text-anchor="middle" font-size="11">collected/*.jpg</text>
+  <text x="853" y="122" text-anchor="middle" font-size="11">manifest.jsonl</text>
+  <text x="853" y="138" text-anchor="middle" font-size="10.5" fill="#888">(sink 1 — per run)</text>
+
+  <rect x="758" y="158" width="190" height="76" rx="4" fill="#ffffff" stroke="#3a9d4a"/>
+  <text x="853" y="178" text-anchor="middle" font-size="11">crossings.csv  (append-only)</text>
+  <text x="853" y="196" text-anchor="middle" font-size="11">crossings.json (atomic)</text>
+  <text x="853" y="214" text-anchor="middle" font-size="11">annotated/&lt;id&gt;.jpg</text>
+  <text x="853" y="230" text-anchor="middle" font-size="10.5" fill="#888">(sink 2 — D8)</text>
+
+  <rect x="758" y="248" width="190" height="56" rx="4" fill="#fffbe9" stroke="#c98a1b"/>
+  <text x="853" y="268" text-anchor="middle" font-size="11">roster.csv (names)</text>
+  <text x="853" y="286" text-anchor="middle" font-size="11">roster.txt (valid numbers)</text>
+  <text x="853" y="300" text-anchor="middle" font-size="10.5" fill="#888">(written on upload)</text>
+
+  <!-- ===== arrows ===== -->
+  <!-- browser -> back-end: POST /frames -->
+  <line x1="288" y1="160" x2="378" y2="110" stroke="#333" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="333" y="128" text-anchor="middle" font-size="10.5">POST /frames</text>
+  <!-- roster upload -> POST /roster -->
+  <line x1="288" y1="205" x2="378" y2="372" stroke="#c98a1b" stroke-width="1.8" marker-end="url(#arro)"/>
+  <text x="322" y="300" text-anchor="middle" font-size="10.5" fill="#8a5a00">POST /roster</text>
+  <!-- GET /results -> timeline (back to browser) -->
+  <line x1="534" y1="360" x2="288" y2="300" stroke="#3b74c4" stroke-width="1.8" marker-end="url(#arrb)"/>
+  <text x="405" y="333" text-anchor="middle" font-size="10.5" fill="#1f4e8c">poll GET /results?run</text>
+  <!-- annotated image -> sidebar -->
+  <line x1="534" y1="405" x2="288" y2="450" stroke="#7a4fbf" stroke-width="1.8" marker-end="url(#arrp)"/>
+  <text x="405" y="445" text-anchor="middle" font-size="10.5" fill="#5a3596">/crossings/{id}/image</text>
+
+  <!-- handler -> queue -->
+  <line x1="531" y1="140" x2="531" y2="148" stroke="#7a4fbf" stroke-width="1.6" marker-end="url(#arrp)"/>
+  <!-- queue -> worker -->
+  <line x1="531" y1="180" x2="531" y2="188" stroke="#7a4fbf" stroke-width="1.6" marker-end="url(#arrp)"/>
+  <!-- sink1 -> disk frames -->
+  <line x1="680" y1="110" x2="756" y2="110" stroke="#333" stroke-width="2" marker-end="url(#arr)"/>
+  <!-- worker -> disk crossings -->
+  <line x1="680" y1="300" x2="740" y2="230" stroke="#3a9d4a" stroke-width="2" marker-end="url(#arrg)"/>
+  <!-- roster route -> disk roster -->
+  <line x1="527" y1="392" x2="740" y2="290" stroke="#c98a1b" stroke-width="1.8" marker-end="url(#arro)"/>
+
+  <defs>
+    <marker id="arr"  markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#333"/></marker>
+    <marker id="arrg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a9d4a"/></marker>
+    <marker id="arrb" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3b74c4"/></marker>
+    <marker id="arro" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c98a1b"/></marker>
+    <marker id="arrp" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#7a4fbf"/></marker>
+  </defs>
+</svg>

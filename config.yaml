@@ -1,0 +1,22 @@
+detector:
+  weights: yolov8n.pt         # small/fast; detects all 5 persons in sample at conf 0.775-0.918
+  person_conf: 0.35           # minimum YOLO person detection confidence
+crossing_zone:
+  polygon: null               # null = default band: bottom 20% of frame height (Y_MIN_FRAC=0.80)
+                              # On sample (352px): y_min=282; nearest rider cy/h=0.995 (IN), rest ≤0.724 (OUT)
+locate:
+  back_band: [0.20, 0.55]     # vertical fraction of rider box where the number panel sits
+                              # tuned for sample: skips helmet/collar (top 20%), captures mid-torso number
+ocr:
+  engine: paddleocr           # PP-OCRv6 medium; reads 101 at 0.997 on sample; easyocr is alternate
+  use_angle_cls: true         # textline-orientation classifier for tilted cloth panels
+validate:
+  roster: roster.txt          # start-list of valid numbers (one per line); update per event
+  min_digits: 1
+  max_digits: 3               # confirmed: 1-3 digits, no leading zeros
+  leading_zeros: false
+  max_edit_distance: 1        # snap near-miss OCR read to nearest valid roster entry
+score:
+  confidence_threshold: 0.60  # below this → needs_review; 0.997 >> 0.60 on sample (large margin)
+output:
+  dir: out/

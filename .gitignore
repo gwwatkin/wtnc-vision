@@ -1,0 +1,12 @@
+.venv/
+out/
+collected/
+*.pt
+__pycache__/
+*.pyc
+*.pyo
+
+# Images (raster) — test assets & generated crops; SVG design diagrams are kept
+*.jpg
+*.jpeg
+*.png

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frame Collector</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Frame Collector</h1>
+
+  <div id="controls">
+    <!-- Camera selection (FR2) — task3 populates the options via enumerateDevices -->
+    <label for="camera-select">Camera:</label>
+    <select id="camera-select">
+      <option value="">-- select camera --</option>
+    </select>
+
+    <!-- Per-shot label (FR3) -->
+    <label for="label-input">Label:</label>
+    <input
+      type="text"
+      id="label-input"
+      placeholder="e.g. 101"
+      maxlength="64"
+      autocomplete="off"
+    />
+
+    <!-- Start/stop recording (FR4) -->
+    <button id="toggle-btn" disabled>Start</button>
+  </div>
+
+  <!-- Live camera preview (FR1) -->
+  <video id="preview" autoplay playsinline muted></video>
+
+  <!-- Status line (FR6): recording state, frames sent, last result -->
+  <div id="status">Not recording &mdash; frames sent: 0</div>
+
+  <!-- config.js must load before app.js so window.COLLECTION_CONFIG is set -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
