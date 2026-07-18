@@ -55,6 +55,71 @@ automatically (~100 MB total). Subsequent runs are fast.
    + recognized number drawn). Replace by clicking another card; close with ×.
 6. Use the **View run** selector to browse past runs.
 
+### Review & Editing
+
+The timeline and sidebar support full operator review and correction of the crossing
+record. All edits persist to disk immediately and survive back-end restarts.
+
+**Frame browser (FR1–FR4)**
+
+Click **Browse frames** (in the run controls) or **View frames** from any crossing or
+candidate sidebar to open the frame browser inside the sidebar. Use the scrubber to
+jump to any point in the run's timeline; the filmstrip shows thumbnails with `←`/`→`
+keyboard stepping. Each frame displays the pipeline's outcome when available: rider
+bounding boxes colored by status (green = confident, amber = needs_review, red =
+rejected). Frames not yet processed show "no outcome data".
+
+**Manual crossing creation (FR5–FR7)**
+
+In the frame browser, click **Add crossing here** below the main frame view, enter a
+race number (or leave blank for unidentified), and confirm. The crossing appears in the
+timeline with a `✚ manual` provenance badge.
+
+**Editing and deleting crossings (FR8)**
+
+Opening a crossing in the sidebar reveals:
+- **Edit number** — type a new number (roster autocomplete available) and save.
+  Automatic crossings that are edited gain a `✎ edited` badge.
+- **Move earlier / Move later** — reorder the crossing relative to its neighbours in
+  the order of record. The crossing gains a `↕ moved` badge and keeps it across
+  restarts. New automatic crossings arriving later slot in by capture time without
+  disturbing manual overrides.
+- **Delete** — soft-deletes the crossing (confirms first). The record stays on disk;
+  the timeline hides it.
+
+**Candidate crossings (FR12–FR15)**
+
+Riders that the pipeline detected but could not read confidently are automatically
+grouped into *candidate crossings*. These appear inline in the timeline with a dashed
+border and a `? unidentified` (or `? 128?` when a number was partially read) label.
+Toggle their visibility with **Show candidates** in the run controls.
+
+Opening a candidate shows the representative frame with the detected rider box, the
+pipeline's hint number (if any), and two actions:
+- **Promote** — assign a number and add it to the timeline as a manual crossing.
+- **Dismiss** — mark as noise / duplicate; it disappears from the active view.
+
+Candidates that overlap a confident crossing in time are automatically *suppressed*
+(FR15) and not shown to the operator.
+
+**Queue / processing status (FR16–FR19)**
+
+Below the recording status line, a queue readout shows:
+
+```
+● Queue: 412 captured · 280 processed · 132 pending — processing…
+                results current to 14:32:07
+```
+
+or, when fully caught up:
+
+```
+● Queue: 412 captured · all processed — ✓ up to date
+```
+
+The amber dot pulses while the backlog drains; it turns green when up to date. This
+reflects live capture as well as reopened past runs.
+
 ### On-disk layout
 
 All data lives under `runs/` (gitignored):
@@ -72,6 +137,22 @@ runs/
                                    # read by the CV pipeline for validation)
 ```
 
+### On-disk layout (additions)
+
+The review feature adds two new per-run files:
+
+```
+runs/
+  <safe_label>/
+    ...                              # existing files unchanged
+    frames_index.jsonl               # NEW: per-processed-frame outcome log
+    candidates.json                  # NEW: grouped candidate crossings (all states)
+```
+
+Old runs (processed before this feature) have no `frames_index.jsonl`; frame browsing
+still works for them (raw frames served, outcome overlay shows "no data"). Candidates
+are going-forward only.
+
 ### Configuration
 
 `collection/backend/config.yaml` — key live-pipeline settings:
@@ -81,6 +162,11 @@ runs/
 | `live.enabled` | `true` | `false` → pure frame storage, no CV |
 | `live.dedup_window_s` | `5.0` | seconds within which same number = one crossing |
 | `live.cv_config` | `../../config.yaml` | repo POC pipeline config |
+| `live.candidates.enabled` | `true` | `false` → candidate tracker inert (frame index still written) |
+| `live.candidates.statuses` | `[needs_review, rejected]` | which per-frame statuses feed candidates |
+| `live.candidates.window_s` | (inherits `dedup_window_s`) | grouping window in seconds; absent → use `dedup_window_s` |
+| `live.candidates.min_det_conf` | `0.5` | ignore YOLO boxes below this detection confidence (noise floor) |
+| `live.frames_index.enabled` | `true` | `false` → no per-frame outcome retention; frame browser degrades to raw frames |
 
 See `collection/README.md` for full configuration reference.
 
@@ -149,3 +235,4 @@ All tunable parameters live in `config.yaml`:
 - `specs/completed/results-ux/` — original standalone results viewer (superseded by the
   live pipeline's unified page; kept for historical reference)
 - `specs/completed/live-pipeline/` — live pipeline requirements, design, and tasks
+- `specs/review-editing/` — review & editing feature (frame browser, manual crossings, order, candidates, queue status)
