@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 880" font-family="sans-serif" font-size="13">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <style>
+    .box   { fill:#f8fafc; stroke:#334155; stroke-width:1.5; rx:8; }
+    .newbox{ fill:#ecfdf5; stroke:#059669; stroke-width:1.5; rx:8; }
+    .modbox{ fill:#fefce8; stroke:#ca8a04; stroke-width:1.5; rx:8; }
+    .title { font-weight:bold; font-size:14px; fill:#0f172a; }
+    .small { font-size:11.5px; fill:#334155; }
+    .tag   { font-size:10px; fill:#059669; font-weight:bold; }
+    .tagm  { font-size:10px; fill:#ca8a04; font-weight:bold; }
+    .flow  { stroke:#555; stroke-width:1.4; fill:none; marker-end:url(#arr); }
+    .lbl   { font-size:10.5px; fill:#475569; }
+  </style>
+
+  <text x="20" y="26" class="title" font-size="17">Review &amp; Editing — high-level architecture</text>
+  <text x="700" y="26" class="tag">green = new</text>
+  <text x="790" y="26" class="tagm">yellow = modified</text>
+  <text x="880" y="26" class="small">white = unchanged</text>
+
+  <!-- ══════════ BROWSER ══════════ -->
+  <rect x="20" y="42" width="1000" height="210" class="box"/>
+  <text x="34" y="64" class="title">Browser — unified page (index.html)</text>
+
+  <rect x="34" y="76" width="220" height="160" class="modbox"/>
+  <text x="46" y="96" class="title" font-size="12.5">Capture (app.js)</text>
+  <text x="46" y="114" class="small">controls unchanged (D6)</text>
+  <rect x="46" y="126" width="196" height="52" class="newbox"/>
+  <text x="56" y="144" class="title" font-size="11.5">status.js — queue readout</text>
+  <text x="56" y="160" class="small">captured / processed / pending</text>
+  <text x="56" y="173" class="small">"draining…" ⇄ "✓ up to date"</text>
+  <text x="46" y="200" class="small">polls GET /status with the</text>
+  <text x="46" y="214" class="small">existing results cadence (FR16–19)</text>
+
+  <rect x="272" y="76" width="360" height="160" class="modbox"/>
+  <text x="284" y="96" class="title" font-size="12.5">Timeline (results.js · data.js · render.js)</text>
+  <text x="284" y="116" class="small">• sorted by <tspan font-weight="bold">order_key</tspan> (order-of-record, FR9–11)</text>
+  <text x="284" y="132" class="small">• provenance badges: manual ✚ · edited ✎ · moved ↕ (D3)</text>
+  <text x="284" y="148" class="small">• subdued inline <tspan fill="#059669" font-weight="bold">candidate cards</tspan> + toggle (FR13, OQ2)</text>
+  <text x="284" y="164" class="small">• GET /results + GET /candidates each poll tick</text>
+  <text x="284" y="180" class="small">• re-render forced after any edit (wtnc:edited event)</text>
+  <text x="284" y="204" class="small">clean default view — an operator who never edits</text>
+  <text x="284" y="218" class="small">sees today's page + one status line (NFR1)</text>
+
+  <rect x="650" y="76" width="356" height="160" class="modbox"/>
+  <text x="662" y="96" class="title" font-size="12.5">Sidebar (sidebar.js) + edit actions</text>
+  <text x="662" y="114" class="small">crossing: edit number · move earlier/later · delete</text>
+  <text x="662" y="130" class="small">candidate: promote (hint pre-filled) · dismiss (FR14)</text>
+  <rect x="662" y="140" width="332" height="88" class="newbox"/>
+  <text x="672" y="158" class="title" font-size="11.5">browser.js — frame browser (FR1–4)</text>
+  <text x="672" y="174" class="small">time scrubber + filmstrip window (GET /frames)</text>
+  <text x="672" y="188" class="small">←/→ frame stepping · client-side rider-box overlay</text>
+  <text x="672" y="202" class="small">colored by status (confident / review / rejected)</text>
+  <text x="672" y="216" class="small">"Add crossing here" → manual crossing (FR5–6)</text>
+
+  <!-- browser → api arrows -->
+  <line x1="330" y1="252" x2="330" y2="292" class="flow"/>
+  <text x="338" y="276" class="lbl">poll (reads)</text>
+  <line x1="790" y1="252" x2="790" y2="292" class="flow"/>
+  <text x="798" y="276" class="lbl">edit actions (writes)</text>
+
+  <!-- ══════════ API ══════════ -->
+  <rect x="20" y="292" width="1000" height="128" class="modbox"/>
+  <text x="34" y="314" class="title">FastAPI back-end (app.py) — routes added, existing routes unchanged</text>
+  <rect x="34" y="326" width="470" height="82" class="box"/>
+  <text x="46" y="344" class="title" font-size="12">Reads</text>
+  <text x="46" y="362" class="small">GET /results (＋provenance/order fields) · GET /candidates</text>
+  <text x="46" y="378" class="small">GET /status · GET /frames · GET /frames/image</text>
+  <text x="46" y="394" class="small">GET /crossings/{id}/image · GET /candidates/{id}/image</text>
+  <rect x="520" y="326" width="486" height="82" class="newbox"/>
+  <text x="532" y="344" class="title" font-size="12">Writes (503 when live disabled, like /roster)</text>
+  <text x="532" y="362" class="small">POST /crossings (manual create) · PATCH /crossings/{id} (number/delete)</text>
+  <text x="532" y="378" class="small">POST /crossings/{id}/position (order override)</text>
+  <text x="532" y="394" class="small">POST /candidates/{id}/resolve (promote | dismiss)</text>
+
+  <!-- api → engine arrows -->
+  <line x1="270" y1="420" x2="270" y2="458" class="flow"/>
+  <line x1="760" y1="420" x2="760" y2="458" class="flow"/>
+
+  <!-- ══════════ ENGINE ══════════ -->
+  <rect x="20" y="458" width="1000" height="250" class="modbox"/>
+  <text x="34" y="480" class="title">ResultsEngine (engine.py) — one lock guards all state mutation (NFR6)</text>
+
+  <rect x="34" y="494" width="330" height="200" class="box"/>
+  <text x="46" y="514" class="title" font-size="12.5">Worker thread (existing loop)</text>
+  <text x="46" y="532" class="small">tail manifest.jsonl → pipeline.run(frame)</text>
+  <text x="46" y="550" class="small">per detected rider: status ∈</text>
+  <text x="46" y="565" class="small">{confident, needs_review, rejected}</text>
+  <text x="46" y="588" class="small">confident → _fold (dedup, unchanged)</text>
+  <text x="46" y="605" class="small">＋ absorb-only folds for edited /</text>
+  <text x="46" y="619" class="small">manual crossings — no clobber (FR22)</text>
+  <text x="46" y="640" class="small">non-confident → CandidateTracker</text>
+  <text x="46" y="657" class="small">every frame → FramesIndex append</text>
+  <text x="46" y="680" class="tagm">changes marked ↑ — loop shape kept</text>
+
+  <rect x="382" y="494" width="300" height="200" class="newbox"/>
+  <text x="394" y="514" class="title" font-size="12.5">CandidateTracker (candidates.py)</text>
+  <text x="394" y="532" class="small">groups non-confident rider detections</text>
+  <text x="394" y="546" class="small">into candidates by time window (FR12)</text>
+  <text x="394" y="564" class="small">rep frame = largest rider box</text>
+  <text x="394" y="578" class="small">hint number from needs_review (OQ3)</text>
+  <text x="394" y="596" class="small">suppressed near confident folds (FR15)</text>
+  <text x="394" y="614" class="small">states: open → promoted / dismissed</text>
+  <text x="394" y="628" class="small">/ suppressed (auto)</text>
+  <text x="394" y="650" class="small">FramesIndex (frames_index.py):</text>
+  <text x="394" y="664" class="small">per-frame outcomes for browsing (FR3)</text>
+  <text x="394" y="678" class="small">+ /frames time-window queries</text>
+
+  <rect x="700" y="494" width="306" height="200" class="newbox"/>
+  <text x="712" y="514" class="title" font-size="12.5">Edit operations (edits.py + engine)</text>
+  <text x="712" y="532" class="small">create manual crossing from a frame</text>
+  <text x="712" y="546" class="small">edit number → re-enrich from roster</text>
+  <text x="712" y="560" class="small">soft delete / restore (deleted flag)</text>
+  <text x="712" y="578" class="small">order override: order_key = midpoint</text>
+  <text x="712" y="592" class="small">of neighbors' keys (FR9–10)</text>
+  <text x="712" y="610" class="small">auto crossings keep order_key = time</text>
+  <text x="712" y="624" class="small">→ live arrivals slot in by time (FR11)</text>
+  <text x="712" y="646" class="small">every action: mutate under lock,</text>
+  <text x="712" y="660" class="small">persist atomically, mark provenance</text>
+  <text x="712" y="674" class="small">(D2, D3)</text>
+
+  <!-- engine → disk arrows -->
+  <line x1="200" y1="708" x2="200" y2="746" class="flow"/>
+  <line x1="530" y1="708" x2="530" y2="746" class="flow"/>
+  <line x1="850" y1="708" x2="850" y2="746" class="flow"/>
+
+  <!-- ══════════ DISK ══════════ -->
+  <rect x="20" y="746" width="1000" height="114" class="box"/>
+  <text x="34" y="768" class="title">Disk — runs/&lt;run&gt;/ (per-run co-location, D9/FR20)</text>
+  <text x="34" y="790" class="small">collected/*.jpg · manifest.jsonl · processed_offset · annotated/*.jpg · roster.csv · crossings.csv   <tspan font-style="italic">(all unchanged)</tspan></text>
+  <text x="34" y="812" class="tagm">crossings.json — extended: source · edited · deleted · order_key · order_overridden (old files load with defaults)</text>
+  <text x="34" y="834" class="tag">frames_index.jsonl — append-only, one line per processed frame: what the pipeline saw (riders, statuses, boxes)</text>
+  <text x="34" y="852" class="tag">candidates.json — candidate crossings + resolution state (atomic rewrite, like crossings.json)</text>
+</svg>
