@@ -2,7 +2,7 @@
 FROZEN CONTRACT — do not change these dataclasses.
 All modules and downstream tasks depend on these exact definitions.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -26,3 +26,4 @@ class CrossingResult:
     status: str               # "confident" | "needs_review" | "rejected"
     rider_box: tuple[float, float, float, float]
     crop_path: str | None
+    det_conf: float = 0.0     # per-rider YOLO detection confidence (refinement 1)

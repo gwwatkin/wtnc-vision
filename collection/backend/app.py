@@ -4,9 +4,12 @@ create_app(cfg, live=None) is FROZEN (design §6).
 """
 from __future__ import annotations
 
+import asyncio
+import dataclasses
 import os
+import urllib.parse
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -117,6 +120,7 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
         """Return crossings for one run.
 
         Disabled mode: returns {"run": <safe>, "crossings": []}.
+        Crossing dicts gain: source, edited, order_key, order_overridden (§5).
         """
         run_id = FrameStore.safe_label(run)
         if engine is None:
@@ -135,6 +139,10 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
                 "matched": c.matched,
                 "annotated_url": f"/crossings/{c.crossing_id}/image",
                 "last_seen": c.last_seen,
+                "source": c.source,
+                "edited": c.edited,
+                "order_key": c.order_key,
+                "order_overridden": c.order_overridden,
             }
             for c in crossings
         ]
@@ -182,6 +190,313 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Not found")
 
         path = engine.annotated_path(crossing_id)
+        if path is None or not os.path.isfile(path):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        return FileResponse(path, media_type="image/jpeg")
+
+    # ------------------------------------------------------------------
+    # Helper: 503 disabled response
+    # ------------------------------------------------------------------
+    def _disabled_503() -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "detail": "live processing disabled"},
+        )
+
+    # ------------------------------------------------------------------
+    # GET /status?run=
+    # ------------------------------------------------------------------
+    @app.get("/status")
+    async def get_status(run: str = ""):
+        """Queue status for a run.
+
+        Disabled mode: {"enabled": false}.
+        """
+        if engine is None:
+            return {"enabled": False}
+        run_id = FrameStore.safe_label(run)
+        try:
+            result = await asyncio.to_thread(engine.status, run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        return result
+
+    # ------------------------------------------------------------------
+    # GET /roster?run=  (refinement 2)
+    # ------------------------------------------------------------------
+    @app.get("/roster")
+    async def get_roster(run: str = ""):
+        """Return roster entries for a run.
+
+        Disabled mode: {"run": <safe>, "riders": []}.
+        """
+        run_id = FrameStore.safe_label(run)
+        if engine is None:
+            return {"run": run_id, "riders": []}
+
+        roster = engine._rosters.get(run_id)
+        riders = sorted(
+            [
+                {
+                    "number": number,
+                    "name": entry[0],
+                    "category": entry[1],
+                }
+                for number, entry in roster.entries.items()
+            ],
+            key=lambda r: r["number"],
+        )
+        return {"run": run_id, "riders": riders}
+
+    # ------------------------------------------------------------------
+    # GET /frames?run=&center=&span=&limit=
+    # ------------------------------------------------------------------
+    @app.get("/frames")
+    async def get_frames(
+        run: str = "",
+        center: str = "",
+        span: float = 12.0,
+        limit: int = 300,
+    ):
+        """Return frame browser payload.
+
+        Disabled mode: {"run": <safe>, "meta": {"count": 0, "first_ts": null,
+        "last_ts": null}, "frames": []}.
+        span default 12 s; limit default/max 300.
+        """
+        run_id = FrameStore.safe_label(run)
+        if engine is None:
+            return {
+                "run": run_id,
+                "meta": {"count": 0, "first_ts": None, "last_ts": None},
+                "frames": [],
+            }
+
+        center_ts = center if center else None
+        capped_limit = min(limit, 300)
+
+        try:
+            result = await asyncio.to_thread(
+                engine.frames, run_id, center_ts, span, capped_limit
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        # Add "url" to each frame dict (refinement 9)
+        for frame in result.get("frames", []):
+            fname = frame.get("filename", "")
+            frame["url"] = (
+                f"/frames/image?run={urllib.parse.quote(run_id)}"
+                f"&filename={urllib.parse.quote(fname)}"
+            )
+
+        return result
+
+    # ------------------------------------------------------------------
+    # GET /frames/image?run=&filename=
+    # ------------------------------------------------------------------
+    @app.get("/frames/image")
+    async def get_frame_image(run: str = "", filename: str = ""):
+        """Serve a raw collected frame image.
+
+        Disabled mode (engine is None): 404.
+        """
+        if engine is None:
+            raise HTTPException(status_code=404, detail="Not found")
+
+        run_id = FrameStore.safe_label(run)
+        path = engine.frame_path(run_id, filename)
+        if path is None or not os.path.isfile(path):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        return FileResponse(path, media_type="image/jpeg")
+
+    # ------------------------------------------------------------------
+    # POST /crossings
+    # ------------------------------------------------------------------
+    @app.post("/crossings", status_code=201)
+    async def post_crossings(body: dict):
+        """Manually create a crossing (POST /crossings).
+
+        Body: {"run", "filename", "client_ts", "number": ""}
+        Returns 201 crossing dict.
+        Disabled mode: 503.
+        """
+        if engine is None:
+            return _disabled_503()
+
+        run = body.get("run", "")
+        filename = body.get("filename", "")
+        client_ts = body.get("client_ts", "")
+        number = body.get("number", "")
+
+        if not run or not filename or not client_ts:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing required field(s): run, filename, or client_ts",
+            )
+
+        try:
+            crossing = await asyncio.to_thread(
+                engine.create_crossing, run, filename, client_ts, number
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        return JSONResponse(status_code=201, content=dataclasses.asdict(crossing))
+
+    # ------------------------------------------------------------------
+    # PATCH /crossings/{crossing_id}
+    # ------------------------------------------------------------------
+    @app.patch("/crossings/{crossing_id}")
+    async def patch_crossing(crossing_id: str, body: dict):
+        """Edit a crossing's number or soft-delete it.
+
+        Body must contain ≥1 of: {"number"?: str, "deleted"?: bool}
+        Disabled mode: 503.
+        """
+        if engine is None:
+            return _disabled_503()
+
+        has_number = "number" in body
+        has_deleted = "deleted" in body
+        if not has_number and not has_deleted:
+            raise HTTPException(
+                status_code=400,
+                detail="Body must contain at least one of: 'number', 'deleted'",
+            )
+
+        kwargs: dict[str, Any] = {}
+        if has_number:
+            kwargs["number"] = str(body["number"])
+        if has_deleted:
+            kwargs["deleted"] = bool(body["deleted"])
+
+        try:
+            crossing = await asyncio.to_thread(
+                engine.edit_crossing, crossing_id, **kwargs
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        return dataclasses.asdict(crossing)
+
+    # ------------------------------------------------------------------
+    # POST /crossings/{crossing_id}/position
+    # ------------------------------------------------------------------
+    @app.post("/crossings/{crossing_id}/position")
+    async def set_crossing_position(crossing_id: str, body: dict):
+        """Reorder a crossing.
+
+        Body: {"earlier_id": str|null, "later_id": str|null}
+        Disabled mode: 503.
+        """
+        if engine is None:
+            return _disabled_503()
+
+        earlier_id = body.get("earlier_id")
+        later_id = body.get("later_id")
+
+        if earlier_id is None and later_id is None:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one of 'earlier_id' or 'later_id' must be provided",
+            )
+
+        try:
+            crossing = await asyncio.to_thread(
+                engine.set_position, crossing_id, earlier_id, later_id
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        return dataclasses.asdict(crossing)
+
+    # ------------------------------------------------------------------
+    # GET /candidates?run=
+    # ------------------------------------------------------------------
+    @app.get("/candidates")
+    async def get_candidates(run: str = ""):
+        """Return all candidates for a run (all states).
+
+        Disabled mode: {"run": <safe>, "candidates": []}.
+        """
+        run_id = FrameStore.safe_label(run)
+        if engine is None:
+            return {"run": run_id, "candidates": []}
+
+        try:
+            run_id, candidate_list = await asyncio.to_thread(engine.candidates, run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        candidate_dicts = []
+        for c in candidate_list:
+            d = dataclasses.asdict(c)
+            d["image_url"] = f"/candidates/{c.candidate_id}/image"
+            candidate_dicts.append(d)
+
+        return {"run": run_id, "candidates": candidate_dicts}
+
+    # ------------------------------------------------------------------
+    # POST /candidates/{candidate_id}/resolve
+    # ------------------------------------------------------------------
+    @app.post("/candidates/{candidate_id}/resolve")
+    async def resolve_candidate(candidate_id: str, body: dict):
+        """Promote or dismiss a candidate.
+
+        Body: {"action": "promote"|"dismiss", "number": ""}
+        Disabled mode: 503.
+        """
+        if engine is None:
+            return _disabled_503()
+
+        action = body.get("action", "")
+        number = body.get("number", "")
+
+        if action not in ("promote", "dismiss"):
+            raise HTTPException(
+                status_code=400,
+                detail="'action' must be 'promote' or 'dismiss'",
+            )
+
+        try:
+            result = await asyncio.to_thread(
+                engine.resolve_candidate, candidate_id, action, number
+            )
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+        return result
+
+    # ------------------------------------------------------------------
+    # GET /candidates/{candidate_id}/image
+    # ------------------------------------------------------------------
+    @app.get("/candidates/{candidate_id}/image")
+    async def get_candidate_image(candidate_id: str):
+        """Serve the representative raw frame for a candidate.
+
+        Disabled mode (engine is None): 404.
+        """
+        if engine is None:
+            raise HTTPException(status_code=404, detail="Not found")
+
+        path = engine.candidate_image_path(candidate_id)
         if path is None or not os.path.isfile(path):
             raise HTTPException(status_code=404, detail="Not found")
 

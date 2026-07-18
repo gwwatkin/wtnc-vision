@@ -55,13 +55,25 @@
     <select id="run-select">
       <option value="">-- active label --</option>
     </select>
+
+    <!-- Browse frames button — task6 wires click → openBrowser (§6.5) -->
+    <button id="browse-frames-btn" type="button">Browse frames</button>
+
+    <!-- Show candidates toggle — checked by default; task6 reads per tick (§6.5) -->
+    <label>
+      <input type="checkbox" id="candidates-toggle" checked />
+      Show candidates (<span id="candidates-toggle-count">0</span> open)
+    </label>
   </div>
 
   <!-- Live camera / video preview (FR1) -->
   <video id="preview" autoplay playsinline muted></video>
 
   <!-- Status line: recording state, frames sent, last result -->
-  <div id="status">Not recording &mdash; frames sent: 0</div>
+  <div id="status">Not recording &mdash; frames sent: 0
+    <!-- Queue status — task6 renders into this; hidden by default (§6.5) -->
+    <div id="queue-status" hidden></div>
+  </div>
 
   <!-- Results timeline (FR2/FR3) — task5 renders into this -->
   <main id="timeline">
@@ -74,10 +86,15 @@
     <div id="sidebar-content"></div>
   </aside>
 
+  <!-- Roster number suggestions for edit inputs — task7 populates (§6.4) -->
+  <datalist id="roster-numbers"></datalist>
+
   <!-- config.js must load before app.js so window.COLLECTION_CONFIG is set -->
   <script src="config.js"></script>
   <script src="app.js"></script>
   <!-- results entry point — ES module; task5 implements real behavior -->
+  <!-- Note: status.js, edits.js, browser.js are imported by results.js as ES
+       modules; no separate <script> tags needed here. -->
   <script type="module" src="results/results.js"></script>
 </body>
 </html>

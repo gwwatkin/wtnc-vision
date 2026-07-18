@@ -56,6 +56,7 @@ def run(image_bgr: np.ndarray, cfg: dict) -> list[CrossingResult]:
             status=status,
             rider_box=box.xyxy,
             crop_path=None,
+            det_conf=box.det_conf,  # refinement 1: plumb RiderBox.det_conf through
         ))
 
     return results

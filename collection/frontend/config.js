@@ -8,4 +8,7 @@ window.COLLECTION_CONFIG = {
   MAX_IN_FLIGHT:    3,           // backpressure cap (NFR3)
   RESULTS_POLL_MS:  1500,        // GET /results cadence (OQ5, §7)
   DEFAULT_SOURCE:   "camera",    // "camera" | "video" (D7, §7)
+  // ── frozen keys (review-editing spec §6.5) ──
+  FRAMES_SPAN_S:    12,          // default time window either side of anchor (s)
+  FRAMES_LIMIT:     300,         // max frames per browser request (server-side cap)
 };

@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import threading
 from datetime import datetime, timezone
 
 # Allow importing rider_id from <repo>/src without pip install.
@@ -29,8 +30,10 @@ import cv2  # noqa: E402
 from rider_id import pipeline  # noqa: E402
 from rider_id.io_out import write_annotated_image  # noqa: E402
 
+from .candidates import CandidateTracker
+from .frames_index import FramesIndex
 from .live_config import LiveConfig
-from .results_models import Crossing, _OpenCrossing
+from .results_models import Candidate, Crossing, _OpenCrossing
 from .rosters import RunRosters
 from .storage import FrameStore
 
@@ -154,8 +157,21 @@ class ResultsEngine:
         self._running: bool = False
         self._worker_task: asyncio.Task | None = None
 
+        # Lock guarding ALL crossing/candidate mutation (design §8)
+        self._lock: threading.RLock = threading.RLock()
+
         # Permanent delegation — task4 owns the bodies but not these lines
         self._rosters = RunRosters(run_root)
+
+        # Candidate tracker and frames index — module-level names are monkeypatch
+        # points for task4's tests (refinement 4).
+        self._candidates = CandidateTracker(
+            run_root,
+            live.candidate_window_s,
+            live.candidate_min_det_conf,
+            live.candidate_statuses,
+        )
+        self._frames = FramesIndex(run_root)
 
     async def start(self) -> None:
         """Scan runs/*/; load crossings; launch the worker task."""
@@ -249,6 +265,107 @@ class ResultsEngine:
         if c is None:
             return None
         return os.path.join(self._run_root, c.annotated_path)
+
+    # -----------------------------------------------------------------------
+    # New public methods (§4.4) — stubs; bodies raise NotImplementedError.
+    # task4 provides the real implementations.
+    # -----------------------------------------------------------------------
+
+    def status(self, label: str) -> dict:
+        """Return queue status dict for GET /status.
+
+        {"run", "enabled": True, "captured", "processed", "pending",
+         "state": "up_to_date"|"processing", "processed_through": str|None,
+         "candidates_open": int}
+        """
+        raise NotImplementedError
+
+    def frames(
+        self,
+        label: str,
+        center: str | None,
+        span_s: float,
+        limit: int,
+    ) -> dict:
+        """Return frame browser payload for GET /frames.
+
+        {"run", "meta": {...}, "frames": [...]}
+        """
+        raise NotImplementedError
+
+    def frame_path(self, label: str, filename: str) -> str | None:
+        """Absolute path for GET /frames/image, or None (traversal-guarded).
+
+        Normalized absolute path MUST be under <run_root>/<run_id>/collected/;
+        returns None (→ 404) otherwise.
+        """
+        raise NotImplementedError
+
+    def create_crossing(
+        self,
+        label: str,
+        filename: str,
+        client_ts: str,
+        number: str,
+        box: list[float] | None = None,
+    ) -> Crossing:
+        """Manually create a crossing from a frame (POST /crossings).
+
+        cid = f"{run}-manual-{epoch_ms(client_ts)}"
+        source="manual", confidence=0.0, order_key=epoch_ms(client_ts).
+        """
+        raise NotImplementedError
+
+    def edit_crossing(
+        self,
+        crossing_id: str,
+        *,
+        number: str | None = None,
+        deleted: bool | None = None,
+    ) -> Crossing:
+        """Edit a crossing's number or soft-delete flag (PATCH /crossings/{id}).
+
+        Raises KeyError on unknown crossing_id.
+        """
+        raise NotImplementedError
+
+    def set_position(
+        self,
+        crossing_id: str,
+        earlier_id: str | None,
+        later_id: str | None,
+    ) -> Crossing:
+        """Reorder a crossing between its neighbors (POST /crossings/{id}/position).
+
+        Neighbors are in ORDER-OF-RECORD (ascending order_key). At least one
+        must be given; both must belong to the same run as crossing_id.
+        """
+        raise NotImplementedError
+
+    def candidates(self, label: str) -> tuple[str, list[Candidate]]:
+        """Return (run_id, all_candidates) for GET /candidates."""
+        raise NotImplementedError
+
+    def resolve_candidate(
+        self,
+        candidate_id: str,
+        action: str,
+        number: str = "",
+    ) -> dict:
+        """Resolve a candidate via promote or dismiss (POST /candidates/{id}/resolve).
+
+        action="dismiss" ⇒ set_state("dismissed").
+        action="promote" ⇒ create_crossing + set_state("promoted", cid).
+        Returns {"candidate", "crossing"?}.
+        """
+        raise NotImplementedError
+
+    def candidate_image_path(self, candidate_id: str) -> str | None:
+        """Absolute path of the candidate's representative raw frame, or None.
+
+        Used by GET /candidates/{id}/image.
+        """
+        raise NotImplementedError
 
     # -----------------------------------------------------------------------
     # Worker loop

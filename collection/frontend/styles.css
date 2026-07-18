@@ -406,3 +406,325 @@ button:disabled {
   color: #888;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Queue-status dot (review-editing spec §6.1) ─────────────────────────── */
+
+/*
+  .status-dot — base; applies to the inline indicator beside queue text.
+  .status-dot--green — all processed, up to date.
+  .status-dot--amber — processing in progress.
+*/
+
+.status-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  background: #888;
+}
+
+.status-dot--green {
+  background: #4caf50;
+}
+
+.status-dot--amber {
+  background: #ffa726;
+  animation: status-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes status-dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+#queue-status {
+  font-size: 0.82rem;
+  color: #aaa;
+  margin-top: 0.3rem;
+}
+
+/* ── Provenance badges (§6.3 / D3) ──────────────────────────────────────── */
+
+/*
+  .badge           — base inline marker (all provenance badges).
+  .badge--manual   — "✚ manual" source.
+  .badge--edited   — "✎ edited" by operator.
+  .badge--moved    — "↕ moved" order overridden.
+*/
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.badge--manual {
+  background: #1a3a5c;
+  color: #7ec8ff;
+  border: 1px solid #2a5a8c;
+}
+
+.badge--edited {
+  background: #2d2a00;
+  color: #ffd54f;
+  border: 1px solid #5a5200;
+}
+
+.badge--moved {
+  background: #1a2d1a;
+  color: #81c784;
+  border: 1px solid #2e5730;
+}
+
+/* ── Candidate cards (§6.3 / OQ2) ───────────────────────────────────────── */
+
+/*
+  .card--candidate — dashed border, muted colors; rendered inline at order position.
+  Combine with .card.
+*/
+
+.card--candidate {
+  border-style: dashed;
+  border-color: #555;
+  background: #1e1e1e;
+  opacity: 0.9;
+}
+
+.card--candidate .card__number {
+  color: #aaa;
+  font-style: italic;
+}
+
+.card--candidate .card__name {
+  color: #999;
+  font-weight: 400;
+}
+
+/* ── Sidebar action rows (§6.4) ──────────────────────────────────────────── */
+
+/*
+  .sidebar__actions      — container for action buttons/inputs.
+  .sidebar__action-row   — one row of related controls (label + input/button).
+  .sidebar__number-input — inline number text input with roster datalist.
+  .sidebar__btn          — action button (edit / move / delete / promote / dismiss).
+  .sidebar__btn--danger  — destructive action (delete/soft-delete).
+  .sidebar__btn--primary — promote/primary affirmative action.
+*/
+
+.sidebar__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #333;
+  margin-top: 0.5rem;
+}
+
+.sidebar__action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sidebar__number-input {
+  flex: 1;
+  min-width: 5rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.sidebar__btn {
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #333;
+  color: #ccc;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.sidebar__btn:hover:not(:disabled) {
+  background: #444;
+  color: #fff;
+}
+
+.sidebar__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sidebar__btn--danger {
+  background: #3a1010;
+  color: #f08080;
+  border-color: #6a2020;
+}
+
+.sidebar__btn--danger:hover:not(:disabled) {
+  background: #5a1818;
+  color: #ffaaaa;
+}
+
+.sidebar__btn--primary {
+  background: #1a3a5c;
+  color: #7ec8ff;
+  border-color: #2a5a8c;
+}
+
+.sidebar__btn--primary:hover:not(:disabled) {
+  background: #2a5a8c;
+  color: #d0eaff;
+}
+
+/* ── Canvas overlay for candidate rep frames (§6.4) ─────────────────────── */
+
+/*
+  .frame-canvas-wrapper — positions canvas exactly over an <img> for rep_box overlay.
+  .frame-canvas-overlay — the canvas element inside the wrapper.
+*/
+
+.frame-canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.frame-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ── Frame browser layout (§6.4 / FR1–FR4) ──────────────────────────────── */
+
+/*
+  .frame-browser            — overall browser layout inside #sidebar-content.
+  .frame-browser__scrubber  — scrubber row (range input + time label).
+  .frame-browser__filmstrip — horizontal-scrolling thumbnail strip.
+  .filmstrip__thumb         — individual thumbnail.
+  .filmstrip__thumb--active — currently selected frame in the strip.
+  .frame-browser__main      — main viewport area (img + overlay).
+  .frame-browser__outcome   — per-rider outcome labels below the main view.
+  .frame-browser__add-row   — "Add crossing here" control row.
+  .frame-browser__no-outcome — "no outcome data" placeholder for unprocessed frames.
+*/
+
+.frame-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+
+.frame-browser__scrubber {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.frame-browser__scrubber input[type="range"] {
+  flex: 1;
+  accent-color: #5b9cf6;
+}
+
+.frame-browser__filmstrip {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #1a1a1a;
+}
+
+.frame-browser__filmstrip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.frame-browser__filmstrip::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.frame-browser__filmstrip::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 2px;
+}
+
+.filmstrip__thumb {
+  flex-shrink: 0;
+  width: 5rem;
+  height: 3.5rem;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.1s, border-color 0.1s;
+}
+
+.filmstrip__thumb:hover {
+  opacity: 1;
+}
+
+.filmstrip__thumb--active {
+  border-color: #5b9cf6;
+  opacity: 1;
+}
+
+.frame-browser__main {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.frame-browser__main img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.frame-browser__outcome {
+  font-size: 0.78rem;
+  color: #aaa;
+  min-height: 1.2em;
+  padding: 0.1rem 0;
+}
+
+.frame-browser__add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+  border-top: 1px solid #333;
+}
+
+.frame-browser__no-outcome {
+  font-size: 0.8rem;
+  color: #555;
+  font-style: italic;
+  padding: 0.25rem 0;
+}

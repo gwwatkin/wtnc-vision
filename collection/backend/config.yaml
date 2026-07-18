@@ -19,3 +19,11 @@ live:
   cv_config: ../../config.yaml    # repo POC pipeline config
   dedup_window_s: 5.0             # FR9/FR11 — collapse repeats within 5 s
   statuses: [confident]           # FR7 — only confident reads become crossings
+  candidates:
+    enabled: true                       # false ⇒ tracker inert; FramesIndex still writes
+    statuses: [needs_review, rejected]  # which per-frame statuses feed candidates
+    # window_s omitted ⇒ inherits dedup_window_s at load time
+    min_det_conf: 0.5                   # ignore weak YOLO boxes (noise floor)
+  frames_index:
+    enabled: true                       # false ⇒ no per-frame retention (browse degrades
+                                        # to raw frames without outcomes)
