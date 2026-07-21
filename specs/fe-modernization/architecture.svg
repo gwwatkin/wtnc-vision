@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 435" font-family="ui-monospace,monospace" font-size="12">
+  <defs>
+    <marker id="a" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7" fill="none" stroke="#888" stroke-width="1.2"/>
+    </marker>
+    <marker id="t" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7" fill="none" stroke="#00acc1" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <rect width="810" height="435" fill="#f9fafb"/>
+
+  <!-- ══ Row 1: CaptureApp | vendor/preact-setup | ResultsApp ══ -->
+
+  <!-- CaptureApp -->
+  <rect x="10" y="20" width="248" height="148" rx="6" fill="#e8f5e9" stroke="#66bb6a" stroke-width="1.5"/>
+  <text x="134" y="42" text-anchor="middle" fill="#2e7d32" font-weight="bold" font-size="13">CaptureApp</text>
+  <text x="134" y="57" text-anchor="middle" fill="#888" font-size="10">#capture-root</text>
+  <line x1="22" y1="62" x2="246" y2="62" stroke="#c8e6c9" stroke-width="0.5"/>
+  <text x="28" y="79" fill="#555" font-size="11">· SourceSelector</text>
+  <text x="28" y="95" fill="#555" font-size="11">· CameraPreview</text>
+  <text x="28" y="111" fill="#555" font-size="11">· CaptureControls  (label, btn)</text>
+  <text x="28" y="127" fill="#555" font-size="11">· RosterUpload</text>
+  <text x="28" y="148" fill="#888" font-size="10" font-style="italic">useReducer · reads COLLECTION_CONFIG</text>
+
+  <!-- vendor/preact-setup.js (center) -->
+  <rect x="283" y="20" width="244" height="148" rx="6" fill="#fff8e1" stroke="#ffa726" stroke-width="1.5"/>
+  <text x="405" y="42" text-anchor="middle" fill="#e65100" font-weight="bold">vendor / preact-setup.js</text>
+  <line x1="295" y1="50" x2="515" y2="50" stroke="#ffe082" stroke-width="0.5"/>
+  <text x="405" y="70" text-anchor="middle" fill="#777" font-size="11">preact.module.js  (Preact 10)</text>
+  <text x="405" y="86" text-anchor="middle" fill="#777" font-size="11">preact-hooks.module.js</text>
+  <text x="405" y="102" text-anchor="middle" fill="#777" font-size="11">htm.module.js  (tagged templates)</text>
+  <line x1="295" y1="113" x2="515" y2="113" stroke="#ffe082" stroke-width="0.5"/>
+  <text x="405" y="128" text-anchor="middle" fill="#888" font-size="10">authored shim re-exports:</text>
+  <text x="405" y="143" text-anchor="middle" fill="#888" font-size="10">html · h · render · useState · useEffect · useReducer · useRef</text>
+
+  <!-- ResultsApp -->
+  <rect x="552" y="20" width="248" height="148" rx="6" fill="#fce4ec" stroke="#ec407a" stroke-width="1.5"/>
+  <text x="676" y="42" text-anchor="middle" fill="#880e4f" font-weight="bold" font-size="13">ResultsApp</text>
+  <text x="676" y="57" text-anchor="middle" fill="#888" font-size="10">#results-root</text>
+  <line x1="564" y1="62" x2="788" y2="62" stroke="#f8bbd0" stroke-width="0.5"/>
+  <text x="568" y="79" fill="#555" font-size="11">· RunSelector  · StatusBar</text>
+  <text x="568" y="95" fill="#555" font-size="11">· Timeline → Pack → Card</text>
+  <text x="568" y="111" fill="#555" font-size="11">· Sidebar  · FrameBrowser</text>
+  <text x="568" y="127" fill="#555" font-size="11">· CandidateCard</text>
+  <text x="568" y="148" fill="#888" font-size="10" font-style="italic">useReducer + poll loop (useEffect)</text>
+
+  <!-- index.html label spanning all three -->
+  <rect x="10" y="9" width="790" height="7" rx="3" fill="none" stroke="none"/>
+  <text x="405" y="7" text-anchor="middle" fill="#1565c0" font-size="10" font-weight="bold">index.html  ·  mounted by main.js  ·  served by FastAPI StaticFiles</text>
+
+  <!-- ══ Arrows row 1 ══ -->
+  <!-- CaptureApp → vendor -->
+  <line x1="258" y1="94" x2="283" y2="94" stroke="#ffa726" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a)"/>
+  <!-- ResultsApp → vendor -->
+  <line x1="552" y1="94" x2="527" y2="94" stroke="#ffa726" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a)"/>
+
+  <!-- ══ Row 2: api.js  |  (gap)  |  data.js ══ -->
+
+  <!-- api.js -->
+  <rect x="10" y="215" width="225" height="70" rx="6" fill="#f3e5f5" stroke="#ab47bc" stroke-width="1.5"/>
+  <text x="122" y="240" text-anchor="middle" fill="#6a1b9a" font-weight="bold">api.js</text>
+  <text x="122" y="258" text-anchor="middle" fill="#777" font-size="11">fetch layer · both pages · all HTTP calls</text>
+  <text x="122" y="273" text-anchor="middle" fill="#888" font-size="10">pure async functions (no side-effects)</text>
+
+  <!-- data.js -->
+  <rect x="555" y="215" width="245" height="70" rx="6" fill="#e8eaf6" stroke="#5c6bc0" stroke-width="1.5"/>
+  <text x="677" y="240" text-anchor="middle" fill="#283593" font-weight="bold">data.js  (unchanged)</text>
+  <text x="677" y="258" text-anchor="middle" fill="#777" font-size="11">pure transforms · no DOM · no fetch</text>
+  <text x="677" y="273" text-anchor="middle" fill="#888" font-size="10">groupIntoPacks · computeLanes · merge…</text>
+
+  <!-- ══ Arrows: apps → api.js / data.js ══ -->
+  <!-- CaptureApp → api.js (straight down) -->
+  <line x1="100" y1="168" x2="100" y2="215" stroke="#ab47bc" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#a)"/>
+  <!-- ResultsApp → api.js (routed below vendor row, left to right) -->
+  <path d="M 590,168 L 590,192 L 122,192 L 122,215" fill="none" stroke="#ab47bc" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#a)"/>
+  <!-- ResultsApp → data.js (straight down) -->
+  <line x1="710" y1="168" x2="710" y2="215" stroke="#5c6bc0" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#a)"/>
+
+  <!-- ══ Row 3: tests/ ══ -->
+
+  <!-- tests/ -->
+  <rect x="555" y="305" width="245" height="65" rx="6" fill="#e0f7fa" stroke="#26c6da" stroke-width="1.5"/>
+  <text x="677" y="327" text-anchor="middle" fill="#006064" font-weight="bold">tests/  (node --test)</text>
+  <text x="677" y="345" text-anchor="middle" fill="#555" font-size="11">data.test.js  →  data.js  (pre-port)</text>
+  <text x="677" y="361" text-anchor="middle" fill="#555" font-size="11">timeline.test.js  +  happy-dom</text>
+
+  <!-- tests → data.js -->
+  <line x1="677" y1="305" x2="677" y2="285" stroke="#26c6da" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#t)"/>
+
+  <!-- ══ Row 4: FastAPI ══ -->
+
+  <rect x="10" y="395" width="520" height="32" rx="5" fill="#efebe9" stroke="#8d6e63" stroke-width="1.5"/>
+  <text x="270" y="415" text-anchor="middle" fill="#4e342e" font-weight="bold" font-size="10">FastAPI :8000 · StaticFiles(frontend/) + /results /candidates /status /runs /frames /crossings /roster …</text>
+
+  <!-- api.js → FastAPI (HTTP calls) -->
+  <line x1="122" y1="285" x2="160" y2="395" stroke="#8d6e63" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- data.js → FastAPI (served as static file) -->
+  <line x1="580" y1="285" x2="470" y2="395" stroke="#8d6e63" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#a)"/>
+
+  <!-- legend -->
+  <line x1="660" y1="406" x2="690" y2="406" stroke="#888" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="695" y="410" fill="#666" font-size="10">import</text>
+  <line x1="730" y1="406" x2="760" y2="406" stroke="#888" stroke-width="1.5"/>
+  <text x="765" y="410" fill="#666" font-size="10">HTTP</text>
+</svg>
