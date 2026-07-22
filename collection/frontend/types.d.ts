@@ -85,8 +85,6 @@ export interface State {
   sidebar: {
     open: boolean;
     item: object | null;
-    /** Step index into surrounding frames */
-    frameOffset: number;
   };
 
   browser: {
@@ -107,9 +105,8 @@ export type Action =
   | { type: "POLL_STATUS"; status: object }
   | { type: "TOGGLE_CANDIDATES" }
   | { type: "SELECT_ITEM"; item: object }
-  | { type: "OPEN_SIDEBAR"; item: object; frameOffset?: number }
+  | { type: "OPEN_SIDEBAR"; item: object }
   | { type: "CLOSE_SIDEBAR" }
-  | { type: "STEP_FRAME"; delta: number }
   | { type: "OPEN_BROWSER"; anchorTs: string }
   | { type: "CLOSE_BROWSER" }
   | { type: "POLL_ERROR"; error: string };
@@ -174,12 +171,14 @@ export interface GapSeparatorProps {
 
 export interface SidebarProps {
   item: object | null;
-  frameOffset: number;
   runLabel: string;
+  /** Crossing ids in timeline display order (DESC) — for neighbour-based reorder */
+  orderedCrossingIds: string[];
   onClose: () => void;
-  onStepFrame: (delta: number) => void;
   onEdit: (crossingId: string, fields: object) => Promise<void>;
   onDelete: (crossingId: string) => Promise<void>;
+  /** Neighbour-based reorder — see api.reorderCrossing */
+  onReorder: (crossingId: string, neighbours: { earlierId: string | null; laterId: string | null }) => Promise<void>;
   onPromote: (candidateId: string, payload: object) => Promise<void>;
   onDismiss: (candidateId: string) => Promise<void>;
   onOpenBrowser: (anchorTs: string) => void;

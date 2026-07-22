@@ -85,13 +85,14 @@ function RepBoxCanvas({ imgRef, repBox }) {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {{ item: object, runLabel: string,
- *   onClose: () => void, onStepFrame: (delta: number) => void,
+ * @param {{ item: object, runLabel: string, orderedCrossingIds: string[],
+ *   onClose: () => void,
  *   onEdit: (crossingId: string, fields: object) => Promise<void>,
  *   onDelete: (crossingId: string) => Promise<void>,
+ *   onReorder: (crossingId: string, neighbours: { earlierId: string | null, laterId: string | null }) => Promise<void>,
  *   onOpenBrowser: (anchorTs: string) => void }} props
  */
-function CrossingSidebar({ item, runLabel, onClose, onStepFrame, onEdit, onDelete, onOpenBrowser }) {
+function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, onDelete, onReorder, onOpenBrowser }) {
   const result = /** @type {import('../../types').Result} */ (item);
 
   // Prefill number input — numberText carries "—" for unidentified.
@@ -135,6 +136,38 @@ function CrossingSidebar({ item, runLabel, onClose, onStepFrame, onEdit, onDelet
       : String(result.time);
     onOpenBrowser(anchorTs);
   }, [onOpenBrowser, result.time]);
+
+  // ── Neighbour-based reorder (parity with legacy sidebar.js _buildMoveButtons) ──
+  // Timeline displays newest-first (DESC by orderKey); order-of-record is ASC.
+  // "Move earlier" ⇒ the card *below* (idx+1) becomes our laterId, and the one
+  // below that (idx+2) our earlierId. "Move later" is the mirror (idx-1 / idx-2).
+  const [reordering, setReordering] = useState(false);
+  const ids = orderedCrossingIds || [];
+  const idx = ids.indexOf(result.crossingId);
+  const canMoveEarlier = idx >= 0 && idx < ids.length - 1; // a card exists below
+  const canMoveLater   = idx > 0;                          // a card exists above
+
+  const handleMove = useCallback(async (/** @type {'earlier'|'later'} */ direction) => {
+    const i = ids.indexOf(result.crossingId);
+    if (i < 0) return;
+    let neighbours;
+    if (direction === 'earlier') {
+      if (i >= ids.length - 1) return;
+      neighbours = { earlierId: ids[i + 2] ?? null, laterId: ids[i + 1] };
+    } else {
+      if (i <= 0) return;
+      neighbours = { earlierId: ids[i - 1], laterId: ids[i - 2] ?? null };
+    }
+    setReordering(true);
+    setError(null);
+    try {
+      await onReorder(result.crossingId, neighbours);
+    } catch (/** @type {any} */ err) {
+      setError(err.message ?? 'Reorder failed');
+    } finally {
+      setReordering(false);
+    }
+  }, [onReorder, ids, result.crossingId]);
 
   // Display helpers
   const displayName = (result.matched && result.name) ? result.name : 'Unknown rider';
@@ -180,12 +213,14 @@ function CrossingSidebar({ item, runLabel, onClose, onStepFrame, onEdit, onDelet
         <button
           type="button"
           class="sidebar__btn"
-          onClick=${() => onStepFrame(-1)}
+          disabled=${reordering || !canMoveEarlier}
+          onClick=${() => handleMove('earlier')}
         >Move earlier</button>
         <button
           type="button"
           class="sidebar__btn"
-          onClick=${() => onStepFrame(1)}
+          disabled=${reordering || !canMoveLater}
+          onClick=${() => handleMove('later')}
         >Move later</button>
       </div>
 
@@ -350,7 +385,7 @@ function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpe
  * @returns {any}
  */
 export function Sidebar(props) {
-  const { item, frameOffset, runLabel, onClose, onStepFrame, onEdit, onDelete, onPromote, onDismiss, onOpenBrowser } = props;
+  const { item, runLabel, orderedCrossingIds, onClose, onEdit, onDelete, onReorder, onPromote, onDismiss, onOpenBrowser } = props;
 
   // Populate the shared datalist whenever the overlay opens or runLabel changes.
   useEffect(() => {
@@ -386,10 +421,11 @@ export function Sidebar(props) {
           : html`<${CrossingSidebar}
               item=${item}
               runLabel=${runLabel}
+              orderedCrossingIds=${orderedCrossingIds}
               onClose=${onClose}
-              onStepFrame=${onStepFrame}
               onEdit=${onEdit}
               onDelete=${onDelete}
+              onReorder=${onReorder}
               onOpenBrowser=${onOpenBrowser}
             />`
         }

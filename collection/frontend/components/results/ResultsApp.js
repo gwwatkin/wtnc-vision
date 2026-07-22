@@ -128,6 +128,14 @@ export default function ResultsApp(_props) {
     await refresh();
   }, [selectedRun, refresh]);
 
+  const onReorder = useCallback(async (
+    /** @type {string} */ crossingId,
+    /** @type {{ earlierId: string | null, laterId: string | null }} */ neighbours,
+  ) => {
+    await api.reorderCrossing(selectedRun || '', crossingId, neighbours);
+    await refresh();
+  }, [selectedRun, refresh]);
+
   const onPromote = useCallback(async (/** @type {string} */ candidateId, /** @type {object} */ payload) => {
     await api.promoteCandidate(selectedRun || '', candidateId, /** @type {any} */ (payload));
     await refresh();
@@ -146,6 +154,13 @@ export default function ResultsApp(_props) {
   // ---- render -------------------------------------------------------------
 
   const openCount = state.candidates.length;
+
+  // Crossing ids in timeline display order (DESC) — feeds the sidebar's
+  // neighbour-based reorder. Candidates are skipped (parity with legacy DOM walk).
+  const orderedCrossingIds = state.packs
+    .flatMap((/** @type {any} */ p) => p.results)
+    .filter((/** @type {any} */ r) => !r.isCandidate)
+    .map((/** @type {any} */ r) => r.crossingId);
 
   return html`
     <div class="results">
@@ -179,12 +194,12 @@ export default function ResultsApp(_props) {
       ${state.sidebar.item && html`
         <${Sidebar}
           item=${state.sidebar.item}
-          frameOffset=${state.sidebar.frameOffset}
           runLabel=${state.selectedRun || ''}
+          orderedCrossingIds=${orderedCrossingIds}
           onClose=${() => dispatch({ type: 'CLOSE_SIDEBAR' })}
-          onStepFrame=${(/** @type {number} */ delta) => dispatch({ type: 'STEP_FRAME', delta })}
           onEdit=${onEdit}
           onDelete=${onDelete}
+          onReorder=${onReorder}
           onPromote=${onPromote}
           onDismiss=${onDismiss}
           onOpenBrowser=${(/** @type {string} */ anchorTs) => dispatch({ type: 'OPEN_BROWSER', anchorTs })}

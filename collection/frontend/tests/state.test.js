@@ -152,20 +152,11 @@ test('selection and overlay transitions', async (t) => {
     assert.equal(s.selectedId, 'c1');
     assert.equal(s.sidebar.open, true);
     assert.equal(s.sidebar.item, crossing);
-    assert.equal(s.sidebar.frameOffset, 0);
   });
 
   await t.test('OPEN_SIDEBAR selects a candidate by candidateId', () => {
     const s = reducer(initialState, { type: 'OPEN_SIDEBAR', item: candidate });
     assert.equal(s.selectedId, 'run1-cand-1');
-  });
-
-  await t.test('STEP_FRAME accumulates frameOffset', () => {
-    let s = reducer(initialState, { type: 'OPEN_SIDEBAR', item: crossing });
-    s = reducer(s, { type: 'STEP_FRAME', delta: 1 });
-    s = reducer(s, { type: 'STEP_FRAME', delta: 1 });
-    s = reducer(s, { type: 'STEP_FRAME', delta: -1 });
-    assert.equal(s.sidebar.frameOffset, 1);
   });
 
   await t.test('CLOSE_SIDEBAR clears selection and closes', () => {

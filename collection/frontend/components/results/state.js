@@ -79,7 +79,6 @@ export const initialState = {
   sidebar: {
     open: false,
     item: null,
-    frameOffset: 0,
   },
   browser: {
     open: false,
@@ -91,7 +90,7 @@ export const initialState = {
 };
 
 /**
- * Pure reducer for ResultsApp — handles all 12 FROZEN-4 actions.
+ * Pure reducer for ResultsApp — handles all 11 FROZEN-4 actions.
  *
  * @param {import('../../types').State} state
  * @param {import('../../types').Action} action
@@ -116,7 +115,7 @@ export function reducer(state, action) {
         selectedId: null,
         statusPayload: null,
         pollError: null,
-        sidebar: { open: false, item: null, frameOffset: 0 },
+        sidebar: { open: false, item: null },
         browser: { open: false, anchorTs: null },
       };
 
@@ -163,7 +162,6 @@ export function reducer(state, action) {
         sidebar: {
           open: true,
           item: action.item,
-          frameOffset: action.frameOffset ?? 0,
         },
       };
 
@@ -171,16 +169,7 @@ export function reducer(state, action) {
       return {
         ...state,
         selectedId: null,
-        sidebar: { open: false, item: null, frameOffset: 0 },
-      };
-
-    case 'STEP_FRAME':
-      return {
-        ...state,
-        sidebar: {
-          ...state.sidebar,
-          frameOffset: state.sidebar.frameOffset + action.delta,
-        },
+        sidebar: { open: false, item: null },
       };
 
     case 'OPEN_BROWSER':

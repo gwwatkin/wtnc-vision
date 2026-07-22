@@ -133,7 +133,7 @@ Baked into the requirements below (made by the product owner during scoping):
 
 ### 5.3 Preact port (G3, G4)
 - **FR11** — The results page (timeline, packs/lanes, gap separators, candidate
-  rendering + toggle, sidebar with frame stepping and edit actions, frame browser
+  rendering + toggle, sidebar with edit / delete / reorder actions, frame browser
   overlay, status readout, run selector, order editing) is rendered by Preact
   components. Behavior parity per A4.
 - **FR12** — The capture page (camera preview, source selector, video-file ingest,

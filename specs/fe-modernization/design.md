@@ -222,7 +222,6 @@ that dispatches `POLL_RESULTS` / `POLL_STATUS` on each tick.
   sidebar: {
     open:        boolean,
     item:        Crossing | Candidate | null,
-    frameOffset: number,            // step index into surrounding frames
   },
   browser: {
     open:        boolean,
@@ -258,9 +257,8 @@ outputs, not precomputed `packs`.
 { type: 'POLL_STATUS',      status }
 { type: 'TOGGLE_CANDIDATES' }                              // reducer re-derives packs+lanes
 { type: 'SELECT_ITEM',      item }
-{ type: 'OPEN_SIDEBAR',     item, frameOffset? }
+{ type: 'OPEN_SIDEBAR',     item }
 { type: 'CLOSE_SIDEBAR' }
-{ type: 'STEP_FRAME',       delta }
 { type: 'OPEN_BROWSER',     anchorTs }
 { type: 'CLOSE_BROWSER' }
 { type: 'POLL_ERROR',       error }
@@ -349,16 +347,16 @@ GapSeparator({ label: string })     // formatGapLabel(pack.startTime) — a time
                                     // formatGapLabel moves to the pure layer and is tested (FR8).
 
 Sidebar({
-  item:          object | null,
-  frameOffset:   number,
-  runLabel:      string,
-  onClose:       () => void,
-  onStepFrame:   (delta: number) => void,
-  onEdit:        (crossingId: string, fields: object) => Promise<void>,
-  onDelete:      (crossingId: string) => Promise<void>,
-  onPromote:     (candidateId: string, payload: object) => Promise<void>,
-  onDismiss:     (candidateId: string) => Promise<void>,
-  onOpenBrowser: (anchorTs: string) => void,
+  item:               object | null,
+  runLabel:           string,
+  orderedCrossingIds: string[],       // crossing ids in timeline display order (DESC)
+  onClose:            () => void,
+  onEdit:             (crossingId: string, fields: object) => Promise<void>,
+  onDelete:           (crossingId: string) => Promise<void>,
+  onReorder:          (crossingId: string, { earlierId, laterId }) => Promise<void>,  // neighbour-based (api.reorderCrossing)
+  onPromote:          (candidateId: string, payload: object) => Promise<void>,
+  onDismiss:          (candidateId: string) => Promise<void>,
+  onOpenBrowser:      (anchorTs: string) => void,
 })
 
 FrameBrowser({
