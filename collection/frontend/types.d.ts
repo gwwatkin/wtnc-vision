@@ -277,3 +277,18 @@ export interface PostFrameResult {
   stored?: string;
   run?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Page-split typedefs (additive — do not alter existing typedefs above)
+// ---------------------------------------------------------------------------
+
+/**
+ * Props for the BackendSettings shared component (FROZEN-6, page-split spec).
+ * Self-contained via backend-url.js + api.checkHealth — takes no props.
+ */
+export interface BackendSettingsProps {}
+
+/**
+ * Supported export formats for the crossings download (page-split spec §6).
+ */
+export type ExportFormat = 'csv' | 'json';

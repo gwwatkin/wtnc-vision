@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 660" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 z" fill="#555"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 z" fill="#2b6cb0"/>
+    </marker>
+  </defs>
+
+  <text x="490" y="26" text-anchor="middle" font-size="18" font-weight="bold">Page Split · Configurable Back-end URL · Crossings Download</text>
+
+  <!-- ===== Browser column ===== -->
+  <rect x="20" y="48" width="560" height="592" rx="10" fill="#f7fafc" stroke="#cbd5e0"/>
+  <text x="36" y="70" font-weight="bold" fill="#2d3748">Browser (buildless ES modules)</text>
+
+  <!-- Landing -->
+  <rect x="36" y="84" width="250" height="86" rx="8" fill="#fff" stroke="#a0aec0"/>
+  <text x="48" y="104" font-weight="bold">index.html — Landing</text>
+  <text x="48" y="124" fill="#4a5568">Links only. Loads no app code.</text>
+  <text x="48" y="144" fill="#2b6cb0">→ collect.html</text>
+  <text x="48" y="160" fill="#2b6cb0">→ view.html</text>
+
+  <!-- Shared modules -->
+  <rect x="300" y="84" width="264" height="86" rx="8" fill="#edf2f7" stroke="#a0aec0"/>
+  <text x="312" y="104" font-weight="bold">Shared modules</text>
+  <text x="312" y="123" fill="#4a5568">config.js — defaults (fallback)</text>
+  <text x="312" y="140" fill="#b7791f" font-weight="bold">backend-url.js — cookie store</text>
+  <text x="312" y="157" fill="#4a5568">api.js — every call via BASE()</text>
+
+  <!-- Collector page -->
+  <rect x="36" y="196" width="250" height="212" rx="8" fill="#fff" stroke="#3182ce"/>
+  <text x="48" y="217" font-weight="bold">collect.html → CaptureApp</text>
+  <rect x="50" y="228" width="222" height="34" rx="6" fill="#ebf8ff" stroke="#90cdf4"/>
+  <text x="60" y="249" fill="#2b6cb0">BackendSettings (collapsible)</text>
+  <text x="48" y="284" fill="#4a5568">• camera / video-file capture</text>
+  <text x="48" y="303" fill="#4a5568">• live processing (unchanged)</text>
+  <text x="48" y="322" fill="#4a5568">• roster upload</text>
+  <text x="48" y="341" fill="#4a5568">• status line + active back-end</text>
+  <rect x="50" y="352" width="222" height="44" rx="6" fill="#f0fff4" stroke="#9ae6b4"/>
+  <text x="60" y="371" fill="#276749">POST /frames  (per-frame upload)</text>
+  <text x="60" y="388" fill="#276749">POST /roster · GET /health</text>
+
+  <!-- Viewer page -->
+  <rect x="300" y="196" width="264" height="212" rx="8" fill="#fff" stroke="#3182ce"/>
+  <text x="312" y="217" font-weight="bold">view.html → ResultsApp</text>
+  <rect x="314" y="228" width="236" height="34" rx="6" fill="#ebf8ff" stroke="#90cdf4"/>
+  <text x="324" y="249" fill="#2b6cb0">BackendSettings (collapsible)</text>
+  <text x="312" y="284" fill="#4a5568">• run selector · timeline · sidebar</text>
+  <text x="312" y="303" fill="#4a5568">• frame browser · candidates</text>
+  <text x="312" y="322" fill="#4a5568">• status bar + active back-end</text>
+  <text x="312" y="341" fill="#4a5568">• Download CSV / JSON</text>
+  <rect x="314" y="352" width="236" height="44" rx="6" fill="#fffaf0" stroke="#fbd38d"/>
+  <text x="324" y="371" fill="#975a16">GET /results · /candidates · /status</text>
+  <text x="324" y="388" fill="#975a16">GET /results/export?format=csv|json</text>
+
+  <!-- Cookie store note -->
+  <rect x="36" y="428" width="528" height="86" rx="8" fill="#fffff0" stroke="#d69e2e"/>
+  <text x="48" y="449" font-weight="bold" fill="#975a16">backend-url.js  (cookie: wtnc_backend_url)</text>
+  <text x="48" y="470" fill="#744210">getBackendUrl() → cookie value, else config default ("" = same-origin)</text>
+  <text x="48" y="488" fill="#744210">setBackendUrl(url) → write cookie + notify subscribers  (live re-apply)</text>
+  <text x="48" y="506" fill="#744210">api.BASE() reads it per-call → next poll/upload tick re-points; no reload</text>
+
+  <!-- Live re-apply arrows into store -->
+  <line x1="161" y1="262" x2="200" y2="428" stroke="#b7791f" stroke-dasharray="4 3"/>
+  <line x1="432" y1="262" x2="360" y2="428" stroke="#b7791f" stroke-dasharray="4 3"/>
+
+  <text x="300" y="540" text-anchor="middle" fill="#718096">Each page mounts ONE root — no page loads both apps.</text>
+
+  <!-- ===== Back-end column ===== -->
+  <rect x="620" y="48" width="340" height="592" rx="10" fill="#f0fff4" stroke="#9ae6b4"/>
+  <text x="636" y="70" font-weight="bold" fill="#22543d">FastAPI back-end (Python 3.12, one process)</text>
+
+  <rect x="636" y="84" width="308" height="70" rx="8" fill="#fff" stroke="#68d391"/>
+  <text x="648" y="105" font-weight="bold">StaticFiles mount "/"</text>
+  <text x="648" y="124" fill="#4a5568">serves index.html · collect.html ·</text>
+  <text x="648" y="141" fill="#4a5568">view.html + JS/CSS  (add files only)</text>
+
+  <rect x="636" y="166" width="308" height="118" rx="8" fill="#fff" stroke="#68d391"/>
+  <text x="648" y="187" font-weight="bold">API routes (unchanged + additive)</text>
+  <text x="648" y="207" fill="#4a5568">POST /frames → engine.notify</text>
+  <text x="648" y="225" fill="#4a5568">GET /results ← _compose_crossings()</text>
+  <text x="648" y="243" fill="#c05621" font-weight="bold">GET /results/export  (NEW, reuses</text>
+  <text x="648" y="259" fill="#c05621" font-weight="bold">_compose_crossings → csv | json)</text>
+  <text x="648" y="277" fill="#4a5568">edit / reorder / candidates …</text>
+
+  <rect x="636" y="296" width="308" height="70" rx="8" fill="#fff" stroke="#68d391"/>
+  <text x="648" y="317" font-weight="bold">CORSMiddleware</text>
+  <text x="648" y="336" fill="#4a5568">allow_origins = config allowed_origins</text>
+  <text x="648" y="353" fill="#c05621">add FE origin here to host elsewhere</text>
+
+  <rect x="636" y="378" width="308" height="86" rx="8" fill="#fff" stroke="#68d391"/>
+  <text x="648" y="399" font-weight="bold">Live engine (UNCHANGED)</text>
+  <text x="648" y="419" fill="#4a5568">YOLO + PaddleOCR · dedup · candidates</text>
+  <text x="648" y="437" fill="#4a5568">writes crossings.json / .csv per run</text>
+  <text x="648" y="455" fill="#4a5568">on-disk layout untouched</text>
+
+  <rect x="636" y="476" width="308" height="50" rx="8" fill="#fff" stroke="#68d391"/>
+  <text x="648" y="497" font-weight="bold">runs/&lt;label&gt;/  (disk, gitignored)</text>
+  <text x="648" y="515" fill="#4a5568">frames · manifest · crossings · annotated</text>
+
+  <!-- cross-column arrows -->
+  <line x1="286" y1="374" x2="632" y2="200" stroke="#276749" marker-end="url(#arrow)"/>
+  <line x1="564" y1="374" x2="632" y2="240" stroke="#975a16" marker-end="url(#arrow)"/>
+
+  <!-- BASE indirection callout -->
+  <line x1="432" y1="140" x2="470" y2="196" stroke="#2b6cb0" stroke-dasharray="4 3" marker-end="url(#arrowBlue)"/>
+  <text x="596" y="560" text-anchor="middle" fill="#718096" font-size="12">Configurable BASE() lets the FE be hosted</text>
+  <text x="596" y="576" text-anchor="middle" fill="#718096" font-size="12">apart from the API (same back-end model).</text>
+</svg>
