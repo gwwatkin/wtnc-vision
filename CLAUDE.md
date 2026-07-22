@@ -44,3 +44,15 @@ When a feature ships, move its spec + tasks under `specs/completed/<name>/` (see
   commands can't match the permission allowlist and trigger an approval prompt every
   time. (`source .venv/bin/activate` alone is fine for an interactive shell.)
 - CPU-only; `opencv-python-headless`; no network at runtime beyond first-run model pulls.
+
+## Keeping permission prompts low
+Prefer command shapes the permission allowlist can match; avoid ones it structurally can't.
+- **One command per Bash call.** Don't chain with `&&`/`;`/`|` — a single unmatched
+  segment prompts the whole line.
+- **Use the tool's `cwd`, not `cd X && …`.** Never prefix a command with `cd`.
+- **Read files with the Read/Grep/Glob tools, not `cat`/`grep`/`find`/`sed -n`/`echo`
+  in bash.** No `echo "=== … ==="` separators; no `cat > tmp <<EOF` probe files
+  (write a real file or use a tool).
+- **Avoid `>`/`>>`/`<<EOF`/`$(…)` in bash** — these always trigger a prompt.
+- **venv: always `.venv/bin/python` / `.venv/bin/pytest` from repo root.** Never
+  `source .venv/bin/activate && …` (the `source` compound can't be allowlisted).

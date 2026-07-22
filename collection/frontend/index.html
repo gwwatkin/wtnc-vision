@@ -8,93 +8,17 @@
 </head>
 <body>
   <h1>Frame Collector</h1>
+  <div id="capture-root"></div>
+  <div id="results-root"></div>
 
-  <!-- ── Capture controls (existing + source selector + video file + roster) ── -->
-  <div id="controls">
-    <!-- Source selector (D7) — task6 wires behavior -->
-    <label for="source-select">Source:</label>
-    <select id="source-select">
-      <option value="camera">Camera</option>
-      <option value="video">Video file</option>
-    </select>
-
-    <!-- Camera selection — task6 populates via enumerateDevices -->
-    <label for="camera-select">Camera:</label>
-    <select id="camera-select">
-      <option value="">-- select camera --</option>
-    </select>
-
-    <!-- Video file input (D7) — hidden until source=video; task6 wires behavior -->
-    <input type="file" id="video-file" accept="video/*" hidden />
-
-    <!-- Per-shot label / active run (design §8) -->
-    <label for="label-input">Label:</label>
-    <input
-      type="text"
-      id="label-input"
-      placeholder="e.g. lap3-nearside"
-      maxlength="64"
-      autocomplete="off"
-    />
-
-    <!-- Start/stop recording -->
-    <button id="toggle-btn" disabled>Start</button>
-  </div>
-
-  <!-- Roster upload controls (FR16) — task6 wires POST /roster -->
-  <div id="roster-controls">
-    <label for="roster-file">Roster CSV:</label>
-    <input type="file" id="roster-file" accept=".csv,text/csv" />
-    <button id="roster-upload-btn" type="button">Upload Roster</button>
-    <span id="roster-status"></span>
-  </div>
-
-  <!-- Run selector — task5 populates from GET /runs -->
-  <div id="run-controls">
-    <label for="run-select">View run:</label>
-    <select id="run-select">
-      <option value="">-- active label --</option>
-    </select>
-
-    <!-- Browse frames button — task6 wires click → openBrowser (§6.5) -->
-    <button id="browse-frames-btn" type="button">Browse frames</button>
-
-    <!-- Show candidates toggle — checked by default; task6 reads per tick (§6.5) -->
-    <label>
-      <input type="checkbox" id="candidates-toggle" checked />
-      Show candidates (<span id="candidates-toggle-count">0</span> open)
-    </label>
-  </div>
-
-  <!-- Live camera / video preview (FR1) -->
-  <video id="preview" autoplay playsinline muted></video>
-
-  <!-- Status line: recording state, frames sent, last result -->
-  <div id="status">Not recording &mdash; frames sent: 0
-    <!-- Queue status — task6 renders into this; hidden by default (§6.5) -->
-    <div id="queue-status" hidden></div>
-  </div>
-
-  <!-- Results timeline (FR2/FR3) — task5 renders into this -->
-  <main id="timeline">
-    <p class="timeline-empty">Waiting for results&hellip;</p>
-  </main>
-
-  <!-- Detail sidebar (D2/D3) — task5 manages; hidden by default -->
-  <aside id="sidebar" hidden>
-    <button id="sidebar-close" type="button" aria-label="Close sidebar">&times;</button>
-    <div id="sidebar-content"></div>
-  </aside>
-
-  <!-- Roster number suggestions for edit inputs — task7 populates (§6.4) -->
+  <!-- Shared static datalist — populated by setRosterOptions(run) (FROZEN-8).
+       Must NOT be component-owned: both Sidebar and FrameBrowser bind inputs to
+       this node via list="roster-numbers", regardless of which overlay is open. -->
   <datalist id="roster-numbers"></datalist>
 
-  <!-- config.js must load before app.js so window.COLLECTION_CONFIG is set -->
+  <!-- config.js must load before main.js so window.COLLECTION_CONFIG is set
+       before the module executes. Classic script = synchronous. -->
   <script src="config.js"></script>
-  <script src="app.js"></script>
-  <!-- results entry point — ES module; task5 implements real behavior -->
-  <!-- Note: status.js, edits.js, browser.js are imported by results.js as ES
-       modules; no separate <script> tags needed here. -->
-  <script type="module" src="results/results.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>

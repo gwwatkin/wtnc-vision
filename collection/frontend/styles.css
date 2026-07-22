@@ -593,6 +593,216 @@ button:disabled {
   color: #d0eaff;
 }
 
+/* ── Results section wrapper (ResultsApp) ────────────────────────────────── */
+
+/*
+  .results               — outermost wrapper for the results Preact root.
+  .results__toolbar      — flex row: RunSelector + candidates toggle.
+  .candidates-toggle     — label wrapping the checkbox + text + count badge.
+  .candidates-toggle__count — small badge showing the number of open candidates.
+*/
+
+.results {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.results__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.candidates-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.candidates-toggle__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.3em;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.9em;
+  background: #333;
+  color: #ccc;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ── Capture section wrapper (CaptureApp + children) ─────────────────────── */
+
+/*
+  .capture-app              — outermost wrapper for the capture Preact root.
+  .video-source-controls    — container for the file input + video preview (video mode).
+  .source-selector          — flex row: source label + radio/select.
+  .capture-controls         — flex column wrapper for label row + buttons + status.
+  .capture-controls__label-row  — row: label input.
+  .capture-controls__buttons    — row: Start/Stop button.
+  .capture-controls__status     — inline status text (frames sent / in-flight).
+  .roster-upload            — flex row: file input + upload button + status.
+*/
+
+.capture-app {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.video-source-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.source-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.capture-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.capture-controls__label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.capture-controls__buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.capture-controls__status {
+  font-size: 0.85rem;
+  color: #aaa;
+  min-height: 1.2em;
+  width: 100%;
+  word-break: break-all;
+}
+
+.roster-upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ── StatusBar classes (StatusBar.js) ────────────────────────────────────── */
+
+/*
+  .status-text          — the main status sentence (dot + text).
+  .status-current-to    — secondary line: "results current to hh:mm:ss".
+*/
+
+.status-text {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.status-current-to {
+  font-size: 0.78rem;
+  color: #666;
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* ── Sidebar overlay shell (Sidebar.js — new Preact overlay) ─────────────── */
+
+/*
+  The Preact Sidebar renders its own overlay <div> — distinct from the legacy
+  #sidebar element. Classes below replicate the old #sidebar / #sidebar-close /
+  #sidebar-content rules as BEM equivalents for the component.
+
+  .sidebar__overlay  — full-height fixed panel (replaces #sidebar).
+  .sidebar__header   — flex row: close button + optional heading.
+  .sidebar__close    — close button (replaces #sidebar-close).
+  .sidebar__content  — scrolling content area (replaces #sidebar-content).
+  .sidebar__meta     — small secondary text (frame count, pipeline hint).
+  .sidebar__error    — inline error feedback paragraph.
+*/
+
+.sidebar__overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 360px;
+  background: #1e1e1e;
+  border-left: 1px solid #333;
+  padding: 1rem;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .sidebar__overlay {
+    width: 100%;
+  }
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.sidebar__close {
+  background: transparent;
+  color: #aaa;
+  font-size: 1.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #444;
+}
+
+.sidebar__close:hover {
+  background: #333;
+  color: #fff;
+}
+
+.sidebar__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar__meta {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.sidebar__error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  margin: 0.25rem 0 0;
+}
+
 /* ── Canvas overlay for candidate rep frames (§6.4) ─────────────────────── */
 
 /*

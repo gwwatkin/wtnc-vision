@@ -67,6 +67,14 @@ leading/trailing `-` stripped; empty → `unlabeled`; capped at 64 chars.
 
 ---
 
+## Frontend developer docs
+
+See [`frontend/README.md`](frontend/README.md) for the layout of the Preact
+codebase, how to run `npm run check` (typecheck + unit tests), the shared types
+contract (`types.d.ts`), how to add a component, and how to update a vendored dep.
+
+---
+
 ## Configuration
 
 **`backend/config.yaml`** — key sections:

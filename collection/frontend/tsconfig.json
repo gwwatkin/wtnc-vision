@@ -14,14 +14,7 @@
   "exclude": [
     "vendor/**",
     "node_modules",
-    "app.js",
     "config.js",
-    "results/data.js",
-    "results/results.js",
-    "results/render.js",
-    "results/sidebar.js",
-    "results/browser.js",
-    "results/status.js",
-    "results/edits.js"
+    "results/data.js"
   ]
 }

@@ -195,13 +195,41 @@ at 0.997 confidence).
 
 ### Adjusting config.yaml
 
-All tunable parameters live in `config.yaml`:
+All tunable parameters live in `config.yaml`. This file is shared: it drives both the
+single-image POC and the live pipeline (which points at it via `live.cv_config` in
+`collection/backend/config.yaml`), so changes here affect both.
+
+**Detection — whether a rider is found at all (`detector:`)**
+
+- **`detector.person_conf`** — minimum YOLO confidence for a `person` box (default
+  `0.35`). **Lower it** (e.g. `0.25`) to recover distant, blurred, or partially
+  occluded riders; the cost is more spurious boxes, which are usually filtered out
+  later when OCR finds no number. This is the biggest lever for missed riders.
+- **`detector.weights`** — the YOLO model file (default `yolov8n.pt`, the *nano*
+  model — fastest, least accurate). Swapping to `yolov8s.pt` or `yolov8m.pt` improves
+  recall on small/blurry riders at the cost of CPU speed (`m` is several× slower per
+  frame, which matters for keeping up with the live stream). The file auto-downloads
+  on first use.
+
+**Recognition — whether a found rider becomes a result**
 
 - **`locate.back_band`** — vertical fraction of the rider box where the number panel
-  sits (`[0.20, 0.55]` = skip top 20%, crop to 55%).
-- **`score.confidence_threshold`** — reads below this → `needs_review` (default 0.60).
+  sits (`[0.20, 0.55]` = skip top 20%, crop to 55%). If your camera angle or number
+  placement differs from the tuned sample, the panel can fall outside this band and
+  OCR sees nothing — widen it (e.g. `[0.15, 0.65]`).
+- **`score.confidence_threshold`** — reads below this → `needs_review` instead of
+  `confident` (default `0.60`). In the live pipeline only `confident` reads open a
+  crossing (`live.statuses` in `collection/backend/config.yaml`); lower this to surface
+  more riders, at the cost of noisier reads.
 - **`validate.roster`** — path to the roster file: either plain numbers (one per
   line) or a `number,name,category` CSV (first column used, header tolerated).
+
+> **Missing riders?** There are two distinct failure points. Pick a frame where a
+> rider was dropped and check whether YOLO drew *any* box on them: no box → tune the
+> **detection** knobs above; box but no number → tune the **recognition** knobs (and
+> check the live UI's candidates queue — the rider may already be sitting there for
+> review). The two directions trade off against speed and false positives, so tune the
+> stage that is actually failing.
 
 ---
 
