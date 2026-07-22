@@ -5,7 +5,10 @@ create_app(cfg, live=None) is FROZEN (design §6).
 from __future__ import annotations
 
 import asyncio
+import csv
 import dataclasses
+import io
+import json
 import os
 import urllib.parse
 from contextlib import asynccontextmanager
@@ -14,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .models import AppConfig, FrameMeta
@@ -113,19 +116,17 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
         return {"runs": engine.runs()}
 
     # ------------------------------------------------------------------
-    # GET /results?run=<label>
+    # Helper: build the crossing-dict list (shared by /results and /results/export)
     # ------------------------------------------------------------------
-    @app.get("/results")
-    async def get_results(run: str = ""):
-        """Return crossings for one run.
+    def _compose_crossings(run: str) -> tuple[str, list[dict]]:
+        """Return (safe_run_id, list-of-crossing-dicts).
 
-        Disabled mode: returns {"run": <safe>, "crossings": []}.
-        Crossing dicts gain: source, edited, order_key, order_overridden (§5).
+        The exact list GET /results returns (reviewed state: edits, manual, order;
+        soft-deleted excluded). engine is None → (safe_label, []).
         """
         run_id = FrameStore.safe_label(run)
         if engine is None:
-            return {"run": run_id, "crossings": []}
-
+            return run_id, []
         run_id, crossings = engine.crossings(run)
         crossing_dicts = [
             {
@@ -146,6 +147,37 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
             }
             for c in crossings
         ]
+        return run_id, crossing_dicts
+
+    def _crossings_csv(crossings: list[dict]) -> str:
+        """Serialise crossings to CSV (header + rows sorted by order_key ascending).
+
+        Columns: number, time, name, category. Uses the stdlib csv module for
+        correct quoting.
+        """
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["number", "time", "name", "category"])
+        for c in sorted(crossings, key=lambda x: x.get("order_key") or 0):
+            writer.writerow([
+                c.get("number") or "",
+                c.get("time") or "",
+                c.get("name") or "",
+                c.get("category") or "",
+            ])
+        return buf.getvalue()
+
+    # ------------------------------------------------------------------
+    # GET /results?run=<label>
+    # ------------------------------------------------------------------
+    @app.get("/results")
+    async def get_results(run: str = ""):
+        """Return crossings for one run.
+
+        Disabled mode: returns {"run": <safe>, "crossings": []}.
+        Crossing dicts gain: source, edited, order_key, order_overridden (§5).
+        """
+        run_id, crossing_dicts = _compose_crossings(run)
         return {"run": run_id, "crossings": crossing_dicts}
 
     # ------------------------------------------------------------------
@@ -595,6 +627,40 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
                 "server_ts": stored.server_ts,
             },
         )
+
+    # ------------------------------------------------------------------
+    # GET /results/export?run=&format=json|csv
+    # ------------------------------------------------------------------
+    @app.get("/results/export")
+    async def export_results(run: str = "", format: str = "json"):
+        """Download crossings as JSON or CSV.
+
+        JSON body is identical to GET /results. CSV has header
+        number,time,name,category with one row per crossing in order_key ascending.
+        Empty/engine-disabled → 200 with header-only CSV or empty-list JSON (FR15).
+        Unknown format → 400.
+        Route registered before StaticFiles so it is not shadowed by static serving.
+        """
+        run_id, crossings = _compose_crossings(run)
+        if format == "json":
+            body = json.dumps({"run": run_id, "crossings": crossings})
+            return Response(
+                body,
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": f'attachment; filename="crossings_{run_id}.json"'
+                },
+            )
+        if format == "csv":
+            text = _crossings_csv(crossings)
+            return Response(
+                text,
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f'attachment; filename="crossings_{run_id}.csv"'
+                },
+            )
+        raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
 
     # ------------------------------------------------------------------
     # Static files — MUST be mounted LAST so API routes take precedence

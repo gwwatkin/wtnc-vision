@@ -3,22 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Frame Collector</title>
+  <title>WTNC Vision</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Frame Collector</h1>
-  <div id="capture-root"></div>
-  <div id="results-root"></div>
-
-  <!-- Shared static datalist — populated by setRosterOptions(run) (FROZEN-8).
-       Must NOT be component-owned: both Sidebar and FrameBrowser bind inputs to
-       this node via list="roster-numbers", regardless of which overlay is open. -->
-  <datalist id="roster-numbers"></datalist>
-
-  <!-- config.js must load before main.js so window.COLLECTION_CONFIG is set
-       before the module executes. Classic script = synchronous. -->
-  <script src="config.js"></script>
-  <script type="module" src="main.js"></script>
+  <main class="landing">
+    <h1>WTNC Vision</h1>
+    <div class="landing__links">
+      <a class="landing__link" href="collect.html">Collector — capture &amp; process live</a>
+      <a class="landing__link" href="view.html">Viewer — results, review &amp; download</a>
+    </div>
+  </main>
 </body>
 </html>

@@ -20,12 +20,14 @@
  * @module components/capture/CaptureApp
  */
 
-import { html, useReducer, useEffect, useRef, useCallback } from '../../vendor/preact-setup.js';
+import { html, useReducer, useEffect, useRef, useCallback, useState } from '../../vendor/preact-setup.js';
 import { SourceSelector } from './SourceSelector.js';
 import { CameraPreview } from './CameraPreview.js';
 import { CaptureControls } from './CaptureControls.js';
 import { RosterUpload } from './RosterUpload.js';
 import * as api from '../../api.js';
+import { BackendSettings } from '../common/BackendSettings.js';
+import { getBackendUrl, backendLabel, onBackendUrlChange } from '../../backend-url.js';
 
 // ---------------------------------------------------------------------------
 // Config — read once from the frozen window object
@@ -137,6 +139,9 @@ function reducer(state, action) {
 export default function CaptureApp(_props) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  // Track the active back-end URL so the status line stays live (OQ2/OQ4).
+  const [currentUrl, setCurrentUrl] = useState(() => getBackendUrl());
+
   // Offscreen canvas — reused every tick to avoid GC pressure.
   const canvasRef  = useRef(/** @type {HTMLCanvasElement|null} */ (null));
   const ctxRef     = useRef(/** @type {CanvasRenderingContext2D|null} */ (null));
@@ -179,6 +184,23 @@ export default function CaptureApp(_props) {
       dispatch({ type: 'HEALTH_RESULT', result: 'backend unreachable' });
     });
   }, []);
+
+  // Subscribe to back-end URL changes: update status label, stop any active
+  // recording (upload target moved), and re-run the health check (OQ2/OQ4).
+  useEffect(() => {
+    const unsub = onBackendUrlChange((newUrl) => {
+      setCurrentUrl(newUrl);
+      if (timerRef.current !== null) {
+        stopRecording();
+      }
+      api.checkHealth().then(ok => {
+        dispatch({ type: 'HEALTH_RESULT', result: ok ? 'backend ok' : 'backend unhealthy' });
+      }).catch(() => {
+        dispatch({ type: 'HEALTH_RESULT', result: 'backend unreachable' });
+      });
+    });
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ------------------------------------------------------------------
   // Source-aware client_ts
@@ -436,13 +458,15 @@ export default function CaptureApp(_props) {
   const statusText = (() => {
     if (state.statusMsg) return state.statusMsg;
     const recordingWord = state.recording ? 'Recording' : 'Stopped';
-    return `${recordingWord} — sent: ${state.frameCount}  dropped: ${state.droppedCount}  last: ${state.lastResult}`;
+    return `${recordingWord} — sent: ${state.frameCount}  dropped: ${state.droppedCount}  last: ${state.lastResult}  ·  back-end: ${backendLabel(currentUrl)}`;
   })();
 
   const isCameraSource = state.source === 'camera';
 
   return html`
     <div class="capture-app">
+      <${BackendSettings} />
+
       <${SourceSelector}
         value=${state.source}
         onChange=${handleSourceChange}

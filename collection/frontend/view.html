@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Results Viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="results-root"></div>
+
+  <!-- Shared static datalist — populated by setRosterOptions(run) (FROZEN-8).
+       Must NOT be component-owned: both Sidebar and FrameBrowser bind inputs to
+       this node via list="roster-numbers", regardless of which overlay is open. -->
+  <datalist id="roster-numbers"></datalist>
+
+  <!-- config.js must load before view.js so window.COLLECTION_CONFIG is set
+       before the module executes. Classic script = synchronous. -->
+  <script src="config.js"></script>
+  <script type="module" src="view.js"></script>
+</body>
+</html>

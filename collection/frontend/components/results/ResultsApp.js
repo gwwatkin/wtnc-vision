@@ -8,6 +8,11 @@
  * `wtnc:edited` document event and JSON-diff DOM-skip are gone (SC5) — the
  * skip is now the reducer's identical-hash no-op + Preact's VDOM diff (NFR2).
  *
+ * page-split additions (task6):
+ *   - BackendSettings rendered in toolbar (FROZEN-6 props {}).
+ *   - Download CSV / JSON buttons (FROZEN-4 classes).
+ *   - Live re-point via onBackendUrlChange subscription (OQ2).
+ *
  * @module components/results/ResultsApp
  */
 
@@ -26,6 +31,9 @@ import { StatusBar } from './StatusBar.js';
 import { Timeline } from './Timeline.js';
 import { Sidebar } from './Sidebar.js';
 import { FrameBrowser } from './FrameBrowser.js';
+import { BackendSettings } from '../common/BackendSettings.js';
+import { downloadResults } from './download.js';
+import { onBackendUrlChange } from '../../backend-url.js';
 
 /** @type {{ COLLECTION_CONFIG?: { RESULTS_POLL_MS?: number } }} */
 const _win = /** @type {any} */ (window);
@@ -81,26 +89,35 @@ export default function ResultsApp(_props) {
 
   // ---- poll loops ---------------------------------------------------------
 
+  /**
+   * Fetch /runs, update state, and auto-select the first run if nothing is
+   * currently selected. Extracted as a useCallback so the backend-URL change
+   * handler can invoke it without duplicating poll logic (OQ2/task6).
+   */
+  const loadRuns = useCallback(async () => {
+    try {
+      const runs = await api.fetchRuns();
+      dispatch({ type: 'SET_RUNS', runs });
+      if (runs.length > 0 && !selectedRunRef.current) {
+        dispatch({ type: 'SELECT_RUN', runLabel: runs[0] });
+      }
+    } catch (_err) {
+      // Ignore — run selector just won't update this tick.
+    }
+  }, []);
+
   // Runs list: on mount, then periodically. Auto-select the first run so the
   // page shows data without an explicit pick (blank == nothing to poll).
   useEffect(() => {
     let alive = true;
-    async function loadRuns() {
-      try {
-        const runs = await api.fetchRuns();
-        if (!alive) return;
-        dispatch({ type: 'SET_RUNS', runs });
-        if (runs.length > 0 && !selectedRunRef.current) {
-          dispatch({ type: 'SELECT_RUN', runLabel: runs[0] });
-        }
-      } catch (_err) {
-        // Ignore — run selector just won't update this tick.
-      }
+    async function tick() {
+      if (!alive) return;
+      await loadRuns();
     }
-    loadRuns();
-    const id = setInterval(loadRuns, RUNS_POLL_MS);
+    tick();
+    const id = setInterval(tick, RUNS_POLL_MS);
     return () => { alive = false; clearInterval(id); };
-  }, []);
+  }, [loadRuns]);
 
   // Results + status: (re)start whenever the selected run changes.
   useEffect(() => {
@@ -115,6 +132,25 @@ export default function ResultsApp(_props) {
     const id = setInterval(tick, RESULTS_POLL_MS);
     return () => { alive = false; clearInterval(id); };
   }, [selectedRun, loadResults, loadStatus]);
+
+  // Live re-point (OQ2): subscribe to backend URL changes. On change, wipe the
+  // current run list + selection so stale data from the old back-end disappears,
+  // then immediately re-load runs from the new target. The existing loadRuns
+  // function handles the fetch + auto-select — no poll logic is duplicated.
+  // SELECT_RUN with '' is a valid string (frozen type: string); the reducer
+  // clears derived state and the falsy value halts the results poll until a
+  // real run is selected. selectedRunRef is updated manually so that the
+  // loadRuns auto-select path (which checks !selectedRunRef.current) fires
+  // before the next render sets the ref.
+  useEffect(() => {
+    const unsub = onBackendUrlChange(() => {
+      dispatch({ type: 'SET_RUNS', runs: [] });
+      dispatch({ type: 'SELECT_RUN', runLabel: '' });
+      selectedRunRef.current = '';
+      loadRuns();
+    });
+    return unsub;
+  }, [loadRuns]);
 
   // ---- mutation handlers (the only place mutations live — FR13) -----------
 
@@ -185,6 +221,19 @@ export default function ResultsApp(_props) {
           class="sidebar__btn toolbar__browse-btn"
           onClick=${() => (/** @type {(a: import('../../types').Action) => void} */ (dispatch))({ type: 'OPEN_BROWSER', anchorTs: /** @type {string} */ (/** @type {unknown} */ (null)) })}
         >Browse frames</button>
+        <${BackendSettings} />
+        <div class="results__download">
+          <button
+            class="download-btn"
+            disabled=${!state.selectedRun}
+            onClick=${() => downloadResults(/** @type {string} */ (state.selectedRun), 'csv')}
+          >Download CSV</button>
+          <button
+            class="download-btn"
+            disabled=${!state.selectedRun}
+            onClick=${() => downloadResults(/** @type {string} */ (state.selectedRun), 'json')}
+          >Download JSON</button>
+        </div>
       </div>
 
       <${StatusBar} status=${state.statusPayload} />

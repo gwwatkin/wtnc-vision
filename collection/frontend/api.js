@@ -1,23 +1,29 @@
 /**
  * api.js — Single fetch layer for both the results and capture pages.
  * All functions are pure async — no globals mutated, no DOM touched.
- * Paths are the existing wire contract (FROZEN-6); do not change them.
+ * Paths are the existing wire contract (FROZEN-2, page-split spec); do not change them.
  *
  * @module api
  */
 
-const BASE = () => (/** @type {{ COLLECTION_CONFIG?: import('./types').CollectionConfig }} */ (window)).COLLECTION_CONFIG?.BACKEND_URL ?? '';
+// @ts-check
+
+import { getBackendUrl } from './backend-url.js';
+
+/** @returns {string} Current back-end base URL (cookie override → config default → same-origin). */
+const BASE = () => getBackendUrl();
 
 // ── internal helper ──
 
 /**
  * Fetch wrapper that throws on non-2xx responses.
- * @param {string} url
+ * Prepends BASE() so every caller automatically targets the configured back-end.
+ * @param {string} path  Leading-slash API path, e.g. '/runs'.
  * @param {RequestInit} [init]
  * @returns {Promise<Response>}
  */
-async function _fetch(url, init) {
-  const resp = await fetch(url, init);
+async function _fetch(path, init) {
+  const resp = await fetch(BASE() + path, init);
   if (!resp.ok) {
     let detail = `HTTP ${resp.status}`;
     try {
@@ -219,7 +225,7 @@ export async function dismissCandidate(runLabel, candidateId) {
  */
 export async function checkHealth() {
   try {
-    const resp = await fetch(`${BASE()}/health`);
+    const resp = await fetch(BASE() + '/health');
     return resp.ok;
   } catch (_) {
     return false;
@@ -244,7 +250,7 @@ export async function postFrame(payload) {
     formData.append('session_id', payload.session_id);
   }
   // Do NOT set Content-Type — browser sets multipart boundary automatically.
-  const resp = await _fetch(`${BASE()}/frames`, {
+  const resp = await _fetch('/frames', {
     method: 'POST',
     body:   formData,
   });
@@ -264,7 +270,7 @@ export async function uploadRoster(runLabel, file) {
   formData.append('run', runLabel);
   formData.append('roster', file);
   // Do NOT set Content-Type — browser sets multipart boundary automatically.
-  await _fetch(`${BASE()}/roster`, {
+  await _fetch('/roster', {
     method: 'POST',
     body:   formData,
   });
@@ -282,5 +288,32 @@ export async function uploadRoster(runLabel, file) {
  * @returns {string}
  */
 export function frameUrl(runLabel, filename) {
-  return `/frames/image?run=${encodeURIComponent(runLabel)}&filename=${encodeURIComponent(filename)}`;
+  return BASE() + `/frames/image?run=${encodeURIComponent(runLabel)}&filename=${encodeURIComponent(filename)}`;
+}
+
+/**
+ * Build the URL for the export endpoint (sync, no fetch).
+ * GET /results/export?run=&format=csv|json
+ * This function performs NO fetch.
+ *
+ * @param {string} runLabel
+ * @param {'csv'|'json'} format
+ * @returns {string}
+ */
+export function exportUrl(runLabel, format) {
+  return BASE() + `/results/export?run=${encodeURIComponent(runLabel)}&format=${encodeURIComponent(format)}`;
+}
+
+/**
+ * Fetch the export endpoint and return the response body as a Blob.
+ * Throws (via _fetch) on non-2xx responses.
+ * DOM anchor is NOT created here — that lives in download.js.
+ *
+ * @param {string} runLabel
+ * @param {'csv'|'json'} format
+ * @returns {Promise<Blob>}
+ */
+export async function fetchExportBlob(runLabel, format) {
+  const resp = await _fetch(`/results/export?run=${encodeURIComponent(runLabel)}&format=${encodeURIComponent(format)}`);
+  return resp.blob();
 }

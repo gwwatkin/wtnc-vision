@@ -2,6 +2,12 @@ server:
   host: 127.0.0.1
   port: 8000
   version: "0.1.0"
+  # To host the front-end on a different origin (e.g. a separate dev server or
+  # a remote machine), add that origin here using the exact scheme+host+port
+  # (no trailing slash), then restart the server. Example:
+  #   - http://192.168.1.42:8001
+  # Same-origin installs need no changes — the defaults below already cover the
+  # standard localhost:8000 / localhost:8001 development setup.
   allowed_origins:                # CORS: the front-end origin(s)
     - http://localhost:8000
     - http://127.0.0.1:8000
