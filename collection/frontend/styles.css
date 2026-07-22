@@ -641,6 +641,12 @@ button:disabled {
   line-height: 1.4;
 }
 
+/* "Browse frames" toolbar button — secondary style, always enabled */
+.toolbar__browse-btn {
+  /* inherits .sidebar__btn; this class exists for targeted styling if needed */
+  flex-shrink: 0;
+}
+
 /* ── Capture section wrapper (CaptureApp + children) ─────────────────────── */
 
 /*

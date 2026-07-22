@@ -110,8 +110,8 @@ function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, 
     setError(null);
     try {
       await onEdit(result.crossingId, { number: numberValue.trim() });
-    } catch (/** @type {any} */ err) {
-      setError(err.message ?? 'Save failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -124,8 +124,8 @@ function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, 
     try {
       await onDelete(result.crossingId);
       onClose();
-    } catch (/** @type {any} */ err) {
-      setError(err.message ?? 'Delete failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed');
       setDeleting(false);
     }
   }, [onDelete, result.crossingId, onClose]);
@@ -162,8 +162,8 @@ function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, 
     setError(null);
     try {
       await onReorder(result.crossingId, neighbours);
-    } catch (/** @type {any} */ err) {
-      setError(err.message ?? 'Reorder failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Reorder failed');
     } finally {
       setReordering(false);
     }
@@ -171,9 +171,8 @@ function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, 
 
   // Display helpers
   const displayName = (result.matched && result.name) ? result.name : 'Unknown rider';
-  const displayTime = result.time instanceof Date
-    ? _formatTimeOfDay(result.time)
-    : _formatTimeOfDay(new Date(/** @type {any} */ (result.time)));
+  // result.time is Date per the frozen Result type; the instanceof guard is defensive.
+  const displayTime = _formatTimeOfDay(result.time instanceof Date ? result.time : new Date(String(result.time)));
 
   return html`
     <img
@@ -199,7 +198,7 @@ function CrossingSidebar({ item, runLabel, orderedCrossingIds, onClose, onEdit, 
           list="roster-numbers"
           placeholder="Race number"
           value=${numberValue}
-          onInput=${(/** @type {any} */ e) => setNumberValue(e.target.value)}
+          onInput=${(/** @type {Event} */ e) => setNumberValue(/** @type {HTMLInputElement} */ (e.target).value)}
         />
         <button
           type="button"
@@ -269,8 +268,8 @@ function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpe
     try {
       await onPromote(result.candidateId, { action: 'promote', number: numberValue.trim() });
       onClose();
-    } catch (/** @type {any} */ err) {
-      setError(err.message ?? 'Promote failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Promote failed');
       setBusy(false);
     }
   }, [onPromote, result.candidateId, numberValue, onClose]);
@@ -281,8 +280,8 @@ function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpe
     try {
       await onDismiss(result.candidateId);
       onClose();
-    } catch (/** @type {any} */ err) {
-      setError(err.message ?? 'Dismiss failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Dismiss failed');
       setBusy(false);
     }
   }, [onDismiss, result.candidateId, onClose]);
@@ -302,7 +301,8 @@ function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpe
     if (result.time instanceof Date) {
       return `First seen: ${_formatTimeOfDay(result.time)}`;
     } else if (result.time) {
-      const d = new Date(/** @type {any} */ (result.time));
+      // result.time is Date per CandidateResult type; String() coercion is a safe fallback.
+      const d = new Date(String(result.time));
       return `First seen: ${isNaN(d.getTime()) ? String(result.time) : _formatTimeOfDay(d)}`;
     }
     return '';
@@ -342,7 +342,7 @@ function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpe
           list="roster-numbers"
           placeholder="Race number (blank = unidentified)"
           value=${numberValue}
-          onInput=${(/** @type {any} */ e) => setNumberValue(e.target.value)}
+          onInput=${(/** @type {Event} */ e) => setNumberValue(/** @type {HTMLInputElement} */ (e.target).value)}
         />
       </div>
 
@@ -396,7 +396,7 @@ export function Sidebar(props) {
 
   if (!item) return null;
 
-  const isCandidate = /** @type {any} */ (item).isCandidate === true;
+  const isCandidate = /** @type {import('../../types').Result | import('../../types').CandidateResult} */ (item).isCandidate === true;
 
   return html`
     <div class="sidebar__overlay" role="dialog" aria-modal="true">

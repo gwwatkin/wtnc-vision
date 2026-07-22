@@ -6,7 +6,7 @@
  * @module api
  */
 
-const BASE = () => /** @type {any} */ (window).COLLECTION_CONFIG?.BACKEND_URL ?? '';
+const BASE = () => (/** @type {{ COLLECTION_CONFIG?: import('./types').CollectionConfig }} */ (window)).COLLECTION_CONFIG?.BACKEND_URL ?? '';
 
 // ── internal helper ──
 

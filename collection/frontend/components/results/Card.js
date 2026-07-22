@@ -17,8 +17,10 @@ import { formatTimeOfDay } from './format.js';
  */
 export function Card({ crossing, column, selected, onClick }) {
   // Cast to the shape we know from FROZEN-1 / render.js.
+  // CardProps.crossing is typed as `object` (frozen in types.d.ts); cast to Result
+  // so the compiler can verify field access throughout this function.
   /** @type {import('../../types').Result} */
-  const r = /** @type {any} */ (crossing);
+  const r = /** @type {import('../../types').Result} */ (crossing);
 
   const isUnknown = !r.matched;
 
@@ -46,9 +48,9 @@ export function Card({ crossing, column, selected, onClick }) {
       style=${{ gridColumn: column }}
       onClick=${onClick}
     >
-      ${r.source === 'manual' && html`<span class="badge badge--manual">✚ manual</span>`}
-      ${r.edited            && html`<span class="badge badge--edited">✎ edited</span>`}
-      ${r.orderOverridden   && html`<span class="badge badge--moved">↕ moved</span>`}
+      ${r.source === 'manual' ? html`<span class="badge badge--manual">✚ manual</span>` : null}
+      ${r.edited            ? html`<span class="badge badge--edited">✎ edited</span>` : null}
+      ${r.orderOverridden   ? html`<span class="badge badge--moved">↕ moved</span>` : null}
       <span class="card__number">${numberText}</span>
       <span class="card__name">${nameText}</span>
       <span class="card__meta">${metaText}</span>
@@ -63,8 +65,10 @@ export function Card({ crossing, column, selected, onClick }) {
  * @returns {any}
  */
 export function CandidateCard({ candidate, column, selected, onClick }) {
+  // CandidateCardProps.candidate is typed as `object` (frozen in types.d.ts); cast
+  // to CandidateResult so the compiler can verify field access.
   /** @type {import('../../types').CandidateResult} */
-  const c = /** @type {any} */ (candidate);
+  const c = /** @type {import('../../types').CandidateResult} */ (candidate);
 
   const classes = [
     'card',

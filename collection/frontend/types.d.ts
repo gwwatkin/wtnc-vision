@@ -220,3 +220,60 @@ export interface RosterUploadProps {
   onUpload: (file: File) => Promise<void>;
   status: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Additive typedefs (followup_3) — shared API payload shapes
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape of window.COLLECTION_CONFIG injected by config.js (FROZEN-7).
+ * All fields are optional so that a missing key falls through to the
+ * component-local defaults gracefully.
+ */
+export interface CollectionConfig {
+  BACKEND_URL?: string;
+  CAPTURE_FPS?: number;
+  JPEG_QUALITY?: number;
+  TARGET_WIDTH?: number;
+  MAX_IN_FLIGHT?: number;
+  RESULTS_POLL_MS?: number;
+  DEFAULT_SOURCE?: string;
+  FRAMES_SPAN_S?: number;
+  FRAMES_LIMIT?: number;
+}
+
+/** Shape of the GET /status response payload (FROZEN-7). */
+export interface StatusPayload {
+  enabled: boolean;
+  state: "up_to_date" | "processing";
+  captured: number;
+  processed: number;
+  pending: number;
+  processed_through?: string | null;
+}
+
+/** A single frame record from the GET /frames response. */
+export interface FrameInfo {
+  filename: string;
+  client_ts: string;
+  processed: boolean;
+  riders?: Array<{
+    box: number[];
+    status: string;
+    number: string | null;
+    raw_text: string | null;
+    confidence: number;
+  }> | null;
+}
+
+/** The meta sub-object from the GET /frames response. */
+export interface FramesMeta {
+  first_ts?: string | null;
+  last_ts?: string | null;
+}
+
+/** JSON body returned by POST /frames (postFrame). */
+export interface PostFrameResult {
+  stored?: string;
+  run?: string;
+}

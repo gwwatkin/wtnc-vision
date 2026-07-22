@@ -27,7 +27,9 @@ import { Timeline } from './Timeline.js';
 import { Sidebar } from './Sidebar.js';
 import { FrameBrowser } from './FrameBrowser.js';
 
-const RESULTS_POLL_MS = /** @type {any} */ (window).COLLECTION_CONFIG?.RESULTS_POLL_MS || 1500;
+/** @type {{ COLLECTION_CONFIG?: { RESULTS_POLL_MS?: number } }} */
+const _win = /** @type {any} */ (window);
+const RESULTS_POLL_MS = _win.COLLECTION_CONFIG?.RESULTS_POLL_MS || 1500;
 /** Refresh the run list every ~10 result ticks (~15 s at default cadence). */
 const RUNS_POLL_MS = RESULTS_POLL_MS * 10;
 
@@ -137,7 +139,7 @@ export default function ResultsApp(_props) {
   }, [selectedRun, refresh]);
 
   const onPromote = useCallback(async (/** @type {string} */ candidateId, /** @type {object} */ payload) => {
-    await api.promoteCandidate(selectedRun || '', candidateId, /** @type {any} */ (payload));
+    await api.promoteCandidate(selectedRun || '', candidateId, /** @type {{ action: string, number: string }} */ (payload));
     await refresh();
   }, [selectedRun, refresh]);
 
@@ -158,9 +160,9 @@ export default function ResultsApp(_props) {
   // Crossing ids in timeline display order (DESC) — feeds the sidebar's
   // neighbour-based reorder. Candidates are skipped (parity with legacy DOM walk).
   const orderedCrossingIds = state.packs
-    .flatMap((/** @type {any} */ p) => p.results)
-    .filter((/** @type {any} */ r) => !r.isCandidate)
-    .map((/** @type {any} */ r) => r.crossingId);
+    .flatMap((/** @type {import('../../types').Pack} */ p) => p.results)
+    .filter((/** @type {import('../../types').Result | import('../../types').CandidateResult} */ r) => !r.isCandidate)
+    .map((/** @type {import('../../types').Result} */ r) => r.crossingId);
 
   return html`
     <div class="results">
@@ -179,6 +181,10 @@ export default function ResultsApp(_props) {
           <span>Show candidates</span>
           <span class="candidates-toggle__count">${openCount}</span>
         </label>
+        <button
+          class="sidebar__btn toolbar__browse-btn"
+          onClick=${() => (/** @type {(a: import('../../types').Action) => void} */ (dispatch))({ type: 'OPEN_BROWSER', anchorTs: /** @type {string} */ (/** @type {unknown} */ (null)) })}
+        >Browse frames</button>
       </div>
 
       <${StatusBar} status=${state.statusPayload} />

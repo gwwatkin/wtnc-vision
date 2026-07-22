@@ -26,7 +26,7 @@ const SCRUB_DEBOUNCE_MS = 150;
 
 /** @returns {{ spanS: number, limit: number }} */
 function getFrameConfig() {
-  const cfg = /** @type {any} */ (window).COLLECTION_CONFIG ?? {};
+  const cfg = (/** @type {{ COLLECTION_CONFIG?: import('../../types').CollectionConfig }} */ (window)).COLLECTION_CONFIG ?? {};
   return {
     spanS: cfg.FRAMES_SPAN_S != null ? cfg.FRAMES_SPAN_S : DEFAULT_SPAN_S,
     limit: cfg.FRAMES_LIMIT  != null ? cfg.FRAMES_LIMIT  : DEFAULT_LIMIT,
@@ -124,7 +124,7 @@ function RiderBoxCanvas({ imgEl, riders }) {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {{ runLabel: string, frame: object|null }} props
+ * @param {{ runLabel: string, frame: import('../../types').FrameInfo|null }} props
  */
 function MainFrameView({ runLabel, frame }) {
   const imgRef = useRef(/** @type {HTMLImageElement|null} */ (null));
@@ -138,7 +138,7 @@ function MainFrameView({ runLabel, frame }) {
 
   if (!frame) return null;
 
-  const f = /** @type {any} */ (frame);
+  const f = frame;
   const src = api.frameUrl(runLabel, f.filename);
   const riders = f.processed ? (f.riders ?? []) : null;
   const altText = `Frame at ${_formatTimeOfDay(f.client_ts)}`;
@@ -171,7 +171,7 @@ function MainFrameView({ runLabel, frame }) {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {{ runLabel: string, frame: object|null,
+ * @param {{ runLabel: string, frame: import('../../types').FrameInfo|null,
  *   onCreateCrossing: (payload: object) => Promise<void> }} props
  */
 function AddCrossingRow({ runLabel, frame, onCreateCrossing }) {
@@ -194,14 +194,13 @@ function AddCrossingRow({ runLabel, frame, onCreateCrossing }) {
 
   const handleSubmit = useCallback(async () => {
     if (!frame) return;
-    const f = /** @type {any} */ (frame);
     setSaving(true);
     setFeedback('Saving…');
     try {
       await onCreateCrossing({
         run:      runLabel,
-        filename: f.filename,
-        clientTs: f.client_ts,
+        filename: frame.filename,
+        clientTs: frame.client_ts,
         number:   numberValue.trim(),
       });
       setFeedback('Crossing added.');
@@ -210,8 +209,8 @@ function AddCrossingRow({ runLabel, frame, onCreateCrossing }) {
         setFeedback('');
         setOpen(false);
       }, 2000);
-    } catch (/** @type {any} */ err) {
-      setFeedback(`Error: ${err.message ?? 'unknown'}`);
+    } catch (err) {
+      setFeedback(`Error: ${err instanceof Error ? err.message : 'unknown'}`);
     } finally {
       setSaving(false);
     }
@@ -231,7 +230,7 @@ function AddCrossingRow({ runLabel, frame, onCreateCrossing }) {
                 list="roster-numbers"
                 autocomplete="off"
                 value=${numberValue}
-                onInput=${(/** @type {any} */ e) => setNumberValue(e.target.value)}
+                onInput=${(/** @type {Event} */ e) => setNumberValue(/** @type {HTMLInputElement} */ (e.target).value)}
               />
               <button type="button" disabled=${saving} onClick=${handleSubmit}>Save crossing</button>
               <button type="button" onClick=${handleCancel}>Cancel</button>
@@ -258,10 +257,10 @@ export function FrameBrowser(props) {
   const { runLabel, anchorTs, onClose, onCreateCrossing } = props;
 
   // ── Fetch state ────────────────────────────────────────────────────────────
-  /** @type {[Array<any>|null, Function]} */
-  const [frames, setFrames] = useState(/** @type {Array<any>|null} */ (null));
-  /** @type {[object|null, Function]} */
-  const [meta, setMeta] = useState(/** @type {object|null} */ (null));
+  /** @type {[Array<import('../../types').FrameInfo>|null, Function]} */
+  const [frames, setFrames] = useState(/** @type {Array<import('../../types').FrameInfo>|null} */ (null));
+  /** @type {[import('../../types').FramesMeta|null, Function]} */
+  const [meta, setMeta] = useState(/** @type {import('../../types').FramesMeta|null} */ (null));
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [loadError, setLoadError] = useState(/** @type {string|null} */ (null));
   const [loading, setLoading] = useState(true);
@@ -287,7 +286,8 @@ export function FrameBrowser(props) {
     api.fetchFrames(runLabel, { anchorTs: windowAnchor, spanS, limit })
       .then((data) => {
         if (cancelled) return;
-        const d = /** @type {any} */ (data);
+        // fetchFrames returns Promise<unknown>; cast to the known /frames response shape.
+        const d = /** @type {{ frames?: import('../../types').FrameInfo[], meta?: import('../../types').FramesMeta }} */ (data);
         const framesArr = d.frames ?? [];
         const metaObj   = d.meta   ?? {};
 
@@ -302,7 +302,7 @@ export function FrameBrowser(props) {
         if (windowAnchor) {
           const anchorMs = new Date(windowAnchor).getTime();
           let bestDelta = Infinity;
-          framesArr.forEach((/** @type {any} */ f, /** @type {number} */ i) => {
+          framesArr.forEach((f, /** @type {number} */ i) => {
             const delta = Math.abs(new Date(f.client_ts).getTime() - anchorMs);
             if (delta < bestDelta) { bestDelta = delta; bestIdx = i; }
           });
@@ -313,9 +313,9 @@ export function FrameBrowser(props) {
         setSelectedIdx(bestIdx);
         setLoading(false);
       })
-      .catch((/** @type {any} */ err) => {
+      .catch((err) => {
         if (cancelled) return;
-        setLoadError(`Error loading frames: ${err.message ?? 'unknown'}`);
+        setLoadError(`Error loading frames: ${err instanceof Error ? err.message : 'unknown'}`);
         setLoading(false);
       });
 
@@ -325,9 +325,9 @@ export function FrameBrowser(props) {
   // ── Scrubber state ─────────────────────────────────────────────────────────
   const scrubTimerRef = useRef(/** @type {ReturnType<typeof setTimeout>|null} */ (null));
 
-  const handleScrub = useCallback((/** @type {any} */ e) => {
+  const handleScrub = useCallback((/** @type {Event} */ e) => {
     if (scrubTimerRef.current != null) clearTimeout(scrubTimerRef.current);
-    const chosenMs = Number(e.target.value);
+    const chosenMs = Number(/** @type {HTMLInputElement} */ (e.target).value);
     scrubTimerRef.current = setTimeout(() => {
       scrubTimerRef.current = null;
       setWindowAnchor(new Date(chosenMs).toISOString());
@@ -338,8 +338,8 @@ export function FrameBrowser(props) {
   useEffect(() => {
     const handler = (/** @type {KeyboardEvent} */ e) => {
       if (!frames || frames.length === 0) return;
-      const target = /** @type {any} */ (e.target);
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      const target = e.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
 
@@ -365,7 +365,7 @@ export function FrameBrowser(props) {
   // ── Derived values ─────────────────────────────────────────────────────────
   const selectedFrame = frames ? frames[selectedIdx] ?? null : null;
 
-  const metaObj = /** @type {any} */ (meta ?? {});
+  const metaObj = meta ?? {};
   const firstMs = metaObj.first_ts ? new Date(metaObj.first_ts).getTime() : null;
   const lastMs  = metaObj.last_ts  ? new Date(metaObj.last_ts).getTime()  : null;
   const hasRange = firstMs !== null && lastMs !== null && lastMs > firstMs;
@@ -414,7 +414,7 @@ export function FrameBrowser(props) {
                 </div>
 
                 <div class="frame-browser__filmstrip" ref=${filmstripRef}>
-                  ${(frames ?? []).map((/** @type {any} */ f, /** @type {number} */ idx) => html`
+                  ${(frames ?? []).map((f, /** @type {number} */ idx) => html`
                     <img
                       key=${f.filename ?? idx}
                       class=${'filmstrip__thumb' + (idx === selectedIdx ? ' filmstrip__thumb--active' : '')}

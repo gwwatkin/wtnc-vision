@@ -275,7 +275,13 @@ export function groupIntoPacks(results, gapSeconds) {
 /**
  * Distinct categories present → ordered lanes.
  * laneOrder (array|null) sets explicit order; unlisted categories follow in
- * first-appearance order; UNKNOWN always last.
+ * deterministic alphabetical order; UNKNOWN always last.
+ *
+ * Lane order is a stable function of the *set* of categories present, not of
+ * the order the crossings arrive/sort in. This is deliberate: manual reordering
+ * mutates a crossing's orderKey (and thus its position in the sorted list), and
+ * an ordering keyed off first-appearance would let a reorder shuffle the lane
+ * columns. Alphabetical keeps the columns fixed as riders come and go.
  *
  * Candidate pseudo-results carry category=UNKNOWN_CATEGORY so they slot into
  * the unknown lane with no special-casing here. Lane-based placement in
@@ -289,19 +295,15 @@ export function groupIntoPacks(results, gapSeconds) {
 export function computeLanes(results, opts) {
   const laneOrder = (opts && opts.laneOrder) || [];
 
-  // Collect all distinct categories in first-appearance order.
-  const firstAppearance = [];
+  // Collect all distinct categories present.
   const seen = new Set();
   for (const r of results) {
-    if (!seen.has(r.category)) {
-      seen.add(r.category);
-      firstAppearance.push(r.category);
-    }
+    seen.add(r.category);
   }
 
   // Build ordered list:
   //   1. laneOrder items that are actually present, in laneOrder sequence.
-  //   2. Remaining categories in first-appearance order, excluding UNKNOWN_CATEGORY.
+  //   2. Remaining categories alphabetically, excluding UNKNOWN_CATEGORY.
   //   3. UNKNOWN_CATEGORY last, if present.
   const ordered = [];
   const placed = new Set();
@@ -313,11 +315,18 @@ export function computeLanes(results, opts) {
     }
   }
 
-  for (const cat of firstAppearance) {
+  // Deterministic, locale-independent alphabetical (UTF-16 code-unit) sort so
+  // lane columns don't depend on crossing arrival/sort order — see doc above.
+  const remaining = [];
+  for (const cat of seen) {
     if (!placed.has(cat) && cat !== UNKNOWN_CATEGORY) {
-      ordered.push(cat);
-      placed.add(cat);
+      remaining.push(cat);
     }
+  }
+  remaining.sort();
+  for (const cat of remaining) {
+    ordered.push(cat);
+    placed.add(cat);
   }
 
   if (seen.has(UNKNOWN_CATEGORY)) {

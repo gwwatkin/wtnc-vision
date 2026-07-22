@@ -74,14 +74,15 @@ test('deriveView', async (t) => {
 
   await t.test('excludes candidates when candidatesVisible is false', () => {
     const { packs } = deriveView(crossings, candidates, false);
-    const ids = packs.flatMap((p) => p.results.map((r) => /** @type {any} */ (r).crossingId));
+    const ids = packs.flatMap((p) => p.results.map((r) =>
+      /** @type {import('../types').Result} */ (r).crossingId));
     assert.deepEqual(ids.sort(), ['c1', 'c2']);
-    assert.ok(!packs.some((p) => p.results.some((r) => /** @type {any} */ (r).isCandidate)));
+    assert.ok(!packs.some((p) => p.results.some((r) => r.isCandidate)));
   });
 
   await t.test('includes candidates when candidatesVisible is true', () => {
     const { packs } = deriveView(crossings, candidates, true);
-    const hasCandidate = packs.some((p) => p.results.some((r) => /** @type {any} */ (r).isCandidate));
+    const hasCandidate = packs.some((p) => p.results.some((r) => r.isCandidate));
     assert.ok(hasCandidate, 'candidate pseudo-result must appear');
   });
 
@@ -120,7 +121,7 @@ test('POLL_RESULTS', async (t) => {
 
   await t.test('candidates are excluded from packs by default (candidatesVisible false)', () => {
     const s1 = reducer(initialState, pollAction(crossingPayload(), candidatePayload()));
-    const hasCandidate = s1.packs.some((p) => p.results.some((r) => /** @type {any} */ (r).isCandidate));
+    const hasCandidate = s1.packs.some((p) => p.results.some((r) => r.isCandidate));
     assert.ok(!hasCandidate);
   });
 });
@@ -133,12 +134,12 @@ test('TOGGLE_CANDIDATES re-derives from retained raw arrays', () => {
 
   const s2 = reducer(s1, { type: 'TOGGLE_CANDIDATES' });
   assert.equal(s2.candidatesVisible, true);
-  const hasCandidate = s2.packs.some((p) => p.results.some((r) => /** @type {any} */ (r).isCandidate));
+  const hasCandidate = s2.packs.some((p) => p.results.some((r) => r.isCandidate));
   assert.ok(hasCandidate, 'toggling on must surface the retained candidate without a refetch');
 
   const s3 = reducer(s2, { type: 'TOGGLE_CANDIDATES' });
   assert.equal(s3.candidatesVisible, false);
-  assert.ok(!s3.packs.some((p) => p.results.some((r) => /** @type {any} */ (r).isCandidate)));
+  assert.ok(!s3.packs.some((p) => p.results.some((r) => r.isCandidate)));
 });
 
 // --- selection / sidebar / browser ----------------------------------------

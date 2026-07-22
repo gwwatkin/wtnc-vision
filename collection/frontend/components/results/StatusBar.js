@@ -50,8 +50,9 @@ export function StatusBar({ status }) {
     return html`<div id="queue-status" hidden></div>`;
   }
 
-  // Cast to a typed local for property access — status prop is object | null.
-  const payload = /** @type {any} */ (status);
+  // Cast to typed shape — status prop is declared as object | null (frozen contract);
+  // StatusPayload gives tsc the exact field set used below.
+  const payload = /** @type {import('../../types').StatusPayload} */ (status);
 
   // enabled: false — hide just like status.js does.
   if (!payload.enabled) {

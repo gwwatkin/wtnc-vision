@@ -713,7 +713,7 @@ describe("computeLanes", () => {
     assert.deepEqual(computeLanes([], {}), []);
   });
 
-  it("assigns 0-based index in first-appearance order", () => {
+  it("assigns 0-based index in alphabetical order", () => {
     const t = new Date("2024-06-15T10:00:00.000Z");
     const r1 = makeResult({ time: t, orderKey: t.getTime(), category: "Cat 1" });
     const r2 = makeResult({ time: t, orderKey: t.getTime(), category: "Cat 3" });
@@ -725,6 +725,26 @@ describe("computeLanes", () => {
     assert.equal(lanes[0].index, 0);
     assert.equal(lanes[1].category, "Cat 3");
     assert.equal(lanes[1].index, 1);
+  });
+
+  it("orders lanes alphabetically regardless of arrival/sort order", () => {
+    const t = new Date("2024-06-15T10:00:00.000Z");
+    // Categories arrive reverse-alphabetically — lanes must still come out A→Z,
+    // so that reordering crossings (which changes their sort position) can never
+    // shuffle the lane columns.
+    const rC = makeResult({ time: t, orderKey: t.getTime(), category: "Charlie" });
+    const rA = makeResult({ time: t, orderKey: t.getTime(), category: "Alpha" });
+    const rB = makeResult({ time: t, orderKey: t.getTime(), category: "Bravo" });
+
+    const lanes = computeLanes([rC, rA, rB], { laneOrder: null });
+    assert.deepEqual(
+      lanes.map((l) => l.category),
+      ["Alpha", "Bravo", "Charlie"]
+    );
+
+    // Same categories, opposite arrival order → identical lane layout.
+    const reordered = computeLanes([rA, rB, rC], { laneOrder: null });
+    assert.deepEqual(reordered, lanes);
   });
 
   it("places UNKNOWN_CATEGORY last regardless of first-appearance", () => {

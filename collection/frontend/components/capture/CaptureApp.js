@@ -30,7 +30,7 @@ import * as api from '../../api.js';
 // ---------------------------------------------------------------------------
 // Config — read once from the frozen window object
 // ---------------------------------------------------------------------------
-const cfg = /** @type {any} */ (window).COLLECTION_CONFIG ?? {};
+const cfg = (/** @type {{ COLLECTION_CONFIG?: import('../../types').CollectionConfig }} */ (window)).COLLECTION_CONFIG ?? {};
 const CAPTURE_FPS    = cfg.CAPTURE_FPS    ?? 5;
 const JPEG_QUALITY   = cfg.JPEG_QUALITY   ?? 0.7;
 const TARGET_WIDTH   = cfg.TARGET_WIDTH   ?? 0;
@@ -216,7 +216,7 @@ export default function CaptureApp(_props) {
           seq:        frameSeq,
           session_id: sid ?? undefined,
         });
-        const json = /** @type {any} */ (result);
+        const json = /** @type {import('../../types').PostFrameResult} */ (result);
         let detail = 'ok';
         if (json && json.stored) detail += ' ' + json.stored;
         if (json && json.run)    detail += ' [' + json.run + ']';
@@ -311,8 +311,9 @@ export default function CaptureApp(_props) {
       if (videoEl) {
         videoEl.removeEventListener('ended', onVideoEnded);
         videoEl.addEventListener('ended', onVideoEnded, { once: true });
-        videoEl.play().catch((/** @type {any} */ err) => {
-          dispatch({ type: 'SET_STATUS_MSG', msg: 'Could not play video: ' + err.message });
+        videoEl.play().catch((/** @type {unknown} */ err) => {
+          // err is unknown; .message is safe after the instanceof guard
+          dispatch({ type: 'SET_STATUS_MSG', msg: 'Could not play video: ' + (err instanceof Error ? err.message : String(err)) });
         });
       }
     }
@@ -324,7 +325,8 @@ export default function CaptureApp(_props) {
     dispatch({ type: 'START_RECORDING' });
     recordingRef.current = true;
 
-    timerRef.current = /** @type {number} */ (/** @type {any} */ (setInterval(captureTick, FRAME_INTERVAL_MS)));
+    // @types/node overrides setInterval to Timeout; cast through unknown to get browser number.
+    timerRef.current = /** @type {number} */ (/** @type {unknown} */ (setInterval(captureTick, FRAME_INTERVAL_MS)));
   }
 
   function stopRecording() {
