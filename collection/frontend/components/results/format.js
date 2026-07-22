@@ -1,20 +1,29 @@
 /**
  * format.js — Pure formatting helpers (FROZEN-3 port from render.js).
- * Stub bodies filled by task3.
+ * Verbatim from render.js:21–37. No Preact, no DOM.
  *
  * @module components/results/format
  */
 
 /**
- * Format a gap-separator label (hh:mm) from the pack start time.
+ * Format a Date as wall-clock time-of-day "hh:mm:ss".
  * @param {Date} date
  * @returns {string}
  */
-export function formatGapLabel(date) { throw new Error('stub'); }
+export function formatTimeOfDay(date) {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
 
 /**
- * Format a full time-of-day string (hh:mm:ss) for card meta.
+ * Format a Date as "hh:mm" for use in gap separator labels.
  * @param {Date} date
  * @returns {string}
  */
-export function formatTimeOfDay(date) { throw new Error('stub'); }
+export function formatGapLabel(date) {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}

@@ -1,16 +1,415 @@
 /**
  * Sidebar.js — Crossing / candidate detail overlay.
- * Stub body filled by task4.
+ *
+ * Renders the sidebar for both a confirmed crossing (edit, delete, reorder, view
+ * frames) and a candidate (rep frame + box overlay, promote, dismiss, view frames).
+ * All mutations are delegated to the passed-in async callbacks — this component
+ * never calls api.js directly and never dispatches wtnc:edited (FR13/SC5).
  *
  * @module components/results/Sidebar
  */
 
-import { html } from '../../vendor/preact-setup.js';
+import { html, useState, useEffect, useRef, useCallback } from '../../vendor/preact-setup.js';
+import { setRosterOptions } from './roster.js';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Amber colour used for candidate repBox overlay */
+const CANDIDATE_BOX_COLOR = '#f59e0b';
+
+// ---------------------------------------------------------------------------
+// Sub-components / helpers
+// ---------------------------------------------------------------------------
 
 /**
+ * Canvas overlay for the candidate's representative bounding box.
+ * Drawn on top of a shared <img> via absolute positioning.
+ *
+ * @param {{ imgRef: { current: HTMLImageElement | null }, repBox: [number,number,number,number]|null }} props
+ */
+function RepBoxCanvas({ imgRef, repBox }) {
+  const canvasRef = useRef(/** @type {HTMLCanvasElement|null} */ (null));
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = imgRef.current;
+    if (!canvas || !img || !repBox || repBox.length !== 4) return;
+    const [x1, y1, x2, y2] = repBox;
+    const scaleX = img.clientWidth  / (img.naturalWidth  || img.clientWidth);
+    const scaleY = img.clientHeight / (img.naturalHeight || img.clientHeight);
+    canvas.width  = img.clientWidth;
+    canvas.height = img.clientHeight;
+    canvas.style.width  = `${img.clientWidth}px`;
+    canvas.style.height = `${img.clientHeight}px`;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = CANDIDATE_BOX_COLOR;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(
+      x1 * scaleX,
+      y1 * scaleY,
+      (x2 - x1) * scaleX,
+      (y2 - y1) * scaleY
+    );
+  }, [imgRef, repBox]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    // Draw once loaded.
+    if (img.complete && img.naturalWidth > 0) {
+      draw();
+    } else {
+      img.addEventListener('load', draw);
+    }
+    // Redraw on resize.
+    let ro = /** @type {ResizeObserver|null} */ (null);
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(draw);
+      ro.observe(img);
+    }
+    return () => {
+      img.removeEventListener('load', draw);
+      if (ro) ro.disconnect();
+    };
+  }, [imgRef, draw]);
+
+  return html`<canvas ref=${canvasRef} class="frame-canvas-overlay" />`;
+}
+
+// ---------------------------------------------------------------------------
+// Crossing-mode sidebar
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {{ item: object, runLabel: string,
+ *   onClose: () => void, onStepFrame: (delta: number) => void,
+ *   onEdit: (crossingId: string, fields: object) => Promise<void>,
+ *   onDelete: (crossingId: string) => Promise<void>,
+ *   onOpenBrowser: (anchorTs: string) => void }} props
+ */
+function CrossingSidebar({ item, runLabel, onClose, onStepFrame, onEdit, onDelete, onOpenBrowser }) {
+  const result = /** @type {import('../../types').Result} */ (item);
+
+  // Prefill number input — numberText carries "—" for unidentified.
+  const initialNumber = (result.numberText && result.numberText !== '—')
+    ? result.numberText
+    : (result.raceNumber != null ? String(result.raceNumber) : '');
+
+  const [numberValue, setNumberValue] = useState(initialNumber);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(/** @type {string|null} */ (null));
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await onEdit(result.crossingId, { number: numberValue.trim() });
+    } catch (/** @type {any} */ err) {
+      setError(err.message ?? 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }, [onEdit, result.crossingId, numberValue]);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm('Delete this crossing? This action can be undone by the next edit.')) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(result.crossingId);
+      onClose();
+    } catch (/** @type {any} */ err) {
+      setError(err.message ?? 'Delete failed');
+      setDeleting(false);
+    }
+  }, [onDelete, result.crossingId, onClose]);
+
+  const handleViewFrames = useCallback(() => {
+    const anchorTs = result.time instanceof Date
+      ? result.time.toISOString()
+      : String(result.time);
+    onOpenBrowser(anchorTs);
+  }, [onOpenBrowser, result.time]);
+
+  // Display helpers
+  const displayName = (result.matched && result.name) ? result.name : 'Unknown rider';
+  const displayTime = result.time instanceof Date
+    ? _formatTimeOfDay(result.time)
+    : _formatTimeOfDay(new Date(/** @type {any} */ (result.time)));
+
+  return html`
+    <img
+      src=${result.annotatedUrl}
+      alt=${'Annotated frame for crossing ' + result.crossingId}
+      class="sidebar__image"
+    />
+
+    <div class="sidebar__details">
+      <p class="sidebar__number">${result.numberText ? '#' + result.numberText : '#' + result.raceNumber}</p>
+      <p class="sidebar__name">${displayName}</p>
+      ${(result.matched && result.category && result.category !== 'Unknown')
+        ? html`<p class="sidebar__category">${result.category}</p>`
+        : null}
+      <p class="sidebar__time">${displayTime}</p>
+    </div>
+
+    <div class="sidebar__actions">
+      <div class="sidebar__action-row">
+        <input
+          type="text"
+          class="sidebar__number-input"
+          list="roster-numbers"
+          placeholder="Race number"
+          value=${numberValue}
+          onInput=${(/** @type {any} */ e) => setNumberValue(e.target.value)}
+        />
+        <button
+          type="button"
+          class="sidebar__btn sidebar__btn--primary"
+          disabled=${saving}
+          onClick=${handleSave}
+        >Save number</button>
+      </div>
+
+      <div class="sidebar__action-row">
+        <button
+          type="button"
+          class="sidebar__btn"
+          onClick=${() => onStepFrame(-1)}
+        >Move earlier</button>
+        <button
+          type="button"
+          class="sidebar__btn"
+          onClick=${() => onStepFrame(1)}
+        >Move later</button>
+      </div>
+
+      <div class="sidebar__action-row">
+        <button
+          type="button"
+          class="sidebar__btn sidebar__btn--danger"
+          disabled=${deleting}
+          onClick=${handleDelete}
+        >Delete</button>
+        <button
+          type="button"
+          class="sidebar__btn"
+          onClick=${handleViewFrames}
+        >View frames</button>
+      </div>
+
+      ${error ? html`<p class="sidebar__error" style="color:#dc2626;font-size:0.8rem;margin:0.25rem 0 0;">${error}</p>` : null}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Candidate-mode sidebar
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {{ item: object, runLabel: string,
+ *   onClose: () => void,
+ *   onPromote: (candidateId: string, payload: object) => Promise<void>,
+ *   onDismiss: (candidateId: string) => Promise<void>,
+ *   onOpenBrowser: (anchorTs: string) => void }} props
+ */
+function CandidateSidebar({ item, runLabel, onClose, onPromote, onDismiss, onOpenBrowser }) {
+  const result = /** @type {import('../../types').CandidateResult} */ (item);
+
+  const [numberValue, setNumberValue] = useState(result.hintNumber ? String(result.hintNumber) : '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(/** @type {string|null} */ (null));
+
+  const imgRef = useRef(/** @type {HTMLImageElement|null} */ (null));
+
+  const handlePromote = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await onPromote(result.candidateId, { action: 'promote', number: numberValue.trim() });
+      onClose();
+    } catch (/** @type {any} */ err) {
+      setError(err.message ?? 'Promote failed');
+      setBusy(false);
+    }
+  }, [onPromote, result.candidateId, numberValue, onClose]);
+
+  const handleDismiss = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await onDismiss(result.candidateId);
+      onClose();
+    } catch (/** @type {any} */ err) {
+      setError(err.message ?? 'Dismiss failed');
+      setBusy(false);
+    }
+  }, [onDismiss, result.candidateId, onClose]);
+
+  const handleViewFrames = useCallback(() => {
+    let anchorTs = null;
+    if (result.time instanceof Date) {
+      anchorTs = result.time.toISOString();
+    } else if (result.time) {
+      anchorTs = String(result.time);
+    }
+    if (anchorTs) onOpenBrowser(anchorTs);
+  }, [onOpenBrowser, result.time]);
+
+  // Time display
+  const timeText = (() => {
+    if (result.time instanceof Date) {
+      return `First seen: ${_formatTimeOfDay(result.time)}`;
+    } else if (result.time) {
+      const d = new Date(/** @type {any} */ (result.time));
+      return `First seen: ${isNaN(d.getTime()) ? String(result.time) : _formatTimeOfDay(d)}`;
+    }
+    return '';
+  })();
+
+  const confPct = result.hintConf != null
+    ? ` (${Math.round(result.hintConf * 100)}% conf.)`
+    : '';
+
+  return html`
+    <div class="frame-canvas-wrapper">
+      <img
+        ref=${imgRef}
+        src=${result.imageUrl ?? ''}
+        alt=${'Representative frame for candidate ' + result.candidateId}
+        class="sidebar__image"
+      />
+      <${RepBoxCanvas} imgRef=${imgRef} repBox=${result.repBox ?? null} />
+    </div>
+
+    <div class="sidebar__details">
+      <p class="sidebar__number">? Candidate crossing</p>
+      ${timeText ? html`<p class="sidebar__time">${timeText}</p>` : null}
+      ${result.frameCount != null
+        ? html`<p class="sidebar__meta">${result.frameCount} frame${result.frameCount !== 1 ? 's' : ''}</p>`
+        : null}
+      ${result.hintNumber
+        ? html`<p class="sidebar__meta">Pipeline saw: #${result.hintNumber}${confPct}</p>`
+        : null}
+    </div>
+
+    <div class="sidebar__actions">
+      <div class="sidebar__action-row">
+        <input
+          type="text"
+          class="sidebar__number-input"
+          list="roster-numbers"
+          placeholder="Race number (blank = unidentified)"
+          value=${numberValue}
+          onInput=${(/** @type {any} */ e) => setNumberValue(e.target.value)}
+        />
+      </div>
+
+      <div class="sidebar__action-row">
+        <button
+          type="button"
+          class="sidebar__btn sidebar__btn--primary"
+          disabled=${busy}
+          onClick=${handlePromote}
+        >Promote</button>
+        <button
+          type="button"
+          class="sidebar__btn sidebar__btn--danger"
+          disabled=${busy}
+          onClick=${handleDismiss}
+        >Dismiss</button>
+        <button
+          type="button"
+          class="sidebar__btn"
+          onClick=${handleViewFrames}
+        >View frames</button>
+      </div>
+
+      ${error ? html`<p class="sidebar__error" style="color:#dc2626;font-size:0.8rem;margin:0.25rem 0 0;">${error}</p>` : null}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar (public export)
+// ---------------------------------------------------------------------------
+
+/**
+ * Crossing / candidate detail overlay.
+ *
+ * When open (item != null), renders the appropriate mode. On mount / item
+ * change, populates the shared #roster-numbers datalist via setRosterOptions.
+ *
  * @param {import('../../types').SidebarProps} props
  * @returns {any}
  */
 export function Sidebar(props) {
-  return html``;
+  const { item, frameOffset, runLabel, onClose, onStepFrame, onEdit, onDelete, onPromote, onDismiss, onOpenBrowser } = props;
+
+  // Populate the shared datalist whenever the overlay opens or runLabel changes.
+  useEffect(() => {
+    if (item && runLabel) {
+      setRosterOptions(runLabel);
+    }
+  }, [item, runLabel]);
+
+  if (!item) return null;
+
+  const isCandidate = /** @type {any} */ (item).isCandidate === true;
+
+  return html`
+    <div class="sidebar__overlay" role="dialog" aria-modal="true">
+      <div class="sidebar__header">
+        <button
+          type="button"
+          class="sidebar__close"
+          aria-label="Close sidebar"
+          onClick=${onClose}
+        >×</button>
+      </div>
+      <div class="sidebar__content">
+        ${isCandidate
+          ? html`<${CandidateSidebar}
+              item=${item}
+              runLabel=${runLabel}
+              onClose=${onClose}
+              onPromote=${onPromote}
+              onDismiss=${onDismiss}
+              onOpenBrowser=${onOpenBrowser}
+            />`
+          : html`<${CrossingSidebar}
+              item=${item}
+              runLabel=${runLabel}
+              onClose=${onClose}
+              onStepFrame=${onStepFrame}
+              onEdit=${onEdit}
+              onDelete=${onDelete}
+              onOpenBrowser=${onOpenBrowser}
+            />`
+        }
+      </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Utilities (local — not exported)
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a Date as HH:MM:SS (local time).
+ * @param {Date} d
+ * @returns {string}
+ */
+function _formatTimeOfDay(d) {
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
 }

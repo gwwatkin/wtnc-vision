@@ -2,125 +2,285 @@
  * api.js — Single fetch layer for both the results and capture pages.
  * All functions are pure async — no globals mutated, no DOM touched.
  * Paths are the existing wire contract (FROZEN-6); do not change them.
- * Stub bodies; filled by task7.
  *
  * @module api
  */
 
 const BASE = () => /** @type {any} */ (window).COLLECTION_CONFIG?.BACKEND_URL ?? '';
 
+// ── internal helper ──
+
+/**
+ * Fetch wrapper that throws on non-2xx responses.
+ * @param {string} url
+ * @param {RequestInit} [init]
+ * @returns {Promise<Response>}
+ */
+async function _fetch(url, init) {
+  const resp = await fetch(url, init);
+  if (!resp.ok) {
+    let detail = `HTTP ${resp.status}`;
+    try {
+      const err = await resp.json();
+      if (err && typeof err.detail === 'string') detail = err.detail;
+      else if (err && err.detail) detail = String(err.detail);
+    } catch (_) { /* non-JSON error body */ }
+    throw new Error(detail);
+  }
+  return resp;
+}
+
 // ── reads ──
 
 /**
  * @returns {Promise<string[]>}
  */
-export async function fetchRuns() { throw new Error('stub'); }
+export async function fetchRuns() {
+  const resp = await _fetch('/runs', { cache: 'no-store' });
+  const data = await resp.json();
+  return Array.isArray(data.runs) ? data.runs : [];
+}
 
 /**
  * @param {string} runLabel
  * @returns {Promise<unknown>}
  */
-export async function fetchResults(runLabel) { throw new Error('stub'); }
+export async function fetchResults(runLabel) {
+  const resp = await _fetch(
+    `/results?run=${encodeURIComponent(runLabel)}`,
+    { cache: 'no-store' },
+  );
+  return resp.json();
+}
 
 /**
  * @param {string} runLabel
  * @returns {Promise<unknown>}
  */
-export async function fetchCandidates(runLabel) { throw new Error('stub'); }
+export async function fetchCandidates(runLabel) {
+  const resp = await _fetch(
+    `/candidates?run=${encodeURIComponent(runLabel)}`,
+    { cache: 'no-store' },
+  );
+  return resp.json();
+}
 
 /**
  * @param {string} runLabel
  * @returns {Promise<unknown>}
  */
-export async function fetchStatus(runLabel) { throw new Error('stub'); }
+export async function fetchStatus(runLabel) {
+  const resp = await _fetch(
+    `/status?run=${encodeURIComponent(runLabel)}`,
+    { cache: 'no-store' },
+  );
+  return resp.json();
+}
 
 /**
+ * Fetch a frame window from the server.
+ * Query params: run, span (seconds, from spanS), limit, center (ISO, from anchorTs).
+ *
  * @param {string} runLabel
- * @param {{ anchorTs: string, spanS: number, limit: number }} opts
+ * @param {{ anchorTs: string | null, spanS: number, limit: number }} opts
  * @returns {Promise<unknown>}
  */
-export async function fetchFrames(runLabel, opts) { throw new Error('stub'); }
+export async function fetchFrames(runLabel, { anchorTs, spanS, limit }) {
+  const params = new URLSearchParams({
+    run:   runLabel,
+    span:  String(spanS),
+    limit: String(limit),
+  });
+  if (anchorTs) params.set('center', anchorTs);
+  const resp = await _fetch(`/frames?${params}`);
+  return resp.json();
+}
 
 /**
+ * Fetch the roster for a run. Tolerates an empty/absent roster.
+ *
  * @param {string} runLabel
  * @returns {Promise<Array<{ number: string, name: string }>>}
  */
-export async function fetchRoster(runLabel) { throw new Error('stub'); }
+export async function fetchRoster(runLabel) {
+  const resp = await _fetch(`/roster?run=${encodeURIComponent(runLabel)}`);
+  const payload = await resp.json();
+  return Array.isArray(payload.riders) ? payload.riders : [];
+}
 
 // ── results-side mutations ──
 
 /**
+ * Edit a crossing's number or soft-delete flag (PATCH /crossings/{id}).
+ * Body: { number?, deleted? } — at least one key expected.
+ *
  * @param {string} runLabel
  * @param {string} crossingId
  * @param {object} fields
  * @returns {Promise<void>}
  */
-export async function postEdit(runLabel, crossingId, fields) { throw new Error('stub'); }
+export async function postEdit(runLabel, crossingId, fields) {
+  await _fetch(`/crossings/${encodeURIComponent(crossingId)}`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(fields),
+  });
+}
 
 /**
  * Soft-delete via PATCH { deleted: true } — there is no DELETE route.
+ *
  * @param {string} runLabel
  * @param {string} crossingId
  * @returns {Promise<void>}
  */
-export async function deleteEdit(runLabel, crossingId) { throw new Error('stub'); }
+export async function deleteEdit(runLabel, crossingId) {
+  await _fetch(`/crossings/${encodeURIComponent(crossingId)}`, {
+    method:  'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ deleted: true }),
+  });
+}
 
 /**
+ * Create a manual crossing (POST /crossings).
+ * The caller supplies the ready wire-format payload
+ * { run, filename, client_ts, number }.
+ *
  * @param {string} runLabel
  * @param {object} payload
  * @returns {Promise<void>}
  */
-export async function postManualCrossing(runLabel, payload) { throw new Error('stub'); }
+export async function postManualCrossing(runLabel, payload) {
+  await _fetch('/crossings', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  });
+}
 
 /**
- * Neighbour-based reorder — passes { earlier_id, later_id } to the backend.
+ * Neighbour-based reorder — posts { earlier_id, later_id } to the backend.
+ *
  * @param {string} runLabel
  * @param {string} crossingId
- * @param {{ earlierId: string, laterId: string }} neighbours
+ * @param {{ earlierId: string | null, laterId: string | null }} neighbours
  * @returns {Promise<void>}
  */
-export async function reorderCrossing(runLabel, crossingId, neighbours) { throw new Error('stub'); }
+export async function reorderCrossing(runLabel, crossingId, { earlierId, laterId }) {
+  await _fetch(`/crossings/${encodeURIComponent(crossingId)}/position`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      earlier_id: earlierId ?? null,
+      later_id:   laterId  ?? null,
+    }),
+  });
+}
 
 /**
+ * Promote a candidate to a crossing (POST /candidates/{id}/resolve).
+ * payload must carry { action: 'promote', number }.
+ *
  * @param {string} runLabel
  * @param {string} candidateId
- * @param {object} payload
+ * @param {{ action: string, number: string }} payload
  * @returns {Promise<void>}
  */
-export async function promoteCandidate(runLabel, candidateId, payload) { throw new Error('stub'); }
+export async function promoteCandidate(runLabel, candidateId, payload) {
+  await _fetch(`/candidates/${encodeURIComponent(candidateId)}/resolve`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ action: 'promote', number: payload.number ?? '' }),
+  });
+}
 
 /**
+ * Dismiss a candidate (POST /candidates/{id}/resolve).
+ *
  * @param {string} runLabel
  * @param {string} candidateId
  * @returns {Promise<void>}
  */
-export async function dismissCandidate(runLabel, candidateId) { throw new Error('stub'); }
+export async function dismissCandidate(runLabel, candidateId) {
+  await _fetch(`/candidates/${encodeURIComponent(candidateId)}/resolve`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ action: 'dismiss' }),
+  });
+}
 
 // ── capture-side ──
 
 /**
+ * Health probe. Returns true when the back-end responds with 2xx.
+ *
  * @returns {Promise<boolean>}
  */
-export async function checkHealth() { throw new Error('stub'); }
+export async function checkHealth() {
+  try {
+    const resp = await fetch(`${BASE()}/health`);
+    return resp.ok;
+  } catch (_) {
+    return false;
+  }
+}
 
 /**
- * @param {object} payload
+ * Upload a captured frame (POST /frames). Sends a FormData body with
+ * fields: image (Blob, jpeg), label, client_ts, seq, session_id (optional).
+ * The payload object must carry { image, label, client_ts, seq, session_id? }.
+ *
+ * @param {{ image: Blob, label: string, client_ts: string, seq: string|number, session_id?: string }} payload
  * @returns {Promise<unknown>}
  */
-export async function postFrame(payload) { throw new Error('stub'); }
+export async function postFrame(payload) {
+  const formData = new FormData();
+  formData.append('image', payload.image, 'frame.jpg');
+  formData.append('label', payload.label);
+  formData.append('client_ts', payload.client_ts);
+  formData.append('seq', String(payload.seq));
+  if (payload.session_id) {
+    formData.append('session_id', payload.session_id);
+  }
+  // Do NOT set Content-Type — browser sets multipart boundary automatically.
+  const resp = await _fetch(`${BASE()}/frames`, {
+    method: 'POST',
+    body:   formData,
+  });
+  return resp.json();
+}
 
 /**
+ * Upload a roster CSV for a run (POST /roster).
+ * Sends a FormData body with fields: run (string), roster (File).
+ *
  * @param {string} runLabel
  * @param {File} file
  * @returns {Promise<void>}
  */
-export async function uploadRoster(runLabel, file) { throw new Error('stub'); }
+export async function uploadRoster(runLabel, file) {
+  const formData = new FormData();
+  formData.append('run', runLabel);
+  formData.append('roster', file);
+  // Do NOT set Content-Type — browser sets multipart boundary automatically.
+  await _fetch(`${BASE()}/roster`, {
+    method: 'POST',
+    body:   formData,
+  });
+}
 
 // ── sync URL builders (no fetch) ──
 
 /**
+ * Build the URL for serving a raw frame image.
+ * GET /frames/image?run=&filename=
+ * This function performs NO fetch.
+ *
  * @param {string} runLabel
  * @param {string} filename
  * @returns {string}
  */
-export function frameUrl(runLabel, filename) { throw new Error('stub'); }
+export function frameUrl(runLabel, filename) {
+  return `/frames/image?run=${encodeURIComponent(runLabel)}&filename=${encodeURIComponent(filename)}`;
+}
