@@ -1,6 +1,6 @@
-/* styles.css — Layout for the unified collection + results front-end.
+/* styles.css — Layout for the collection + results front-end.
    Dark theme; no framework; no build step.
-   Task5 adds card/sidebar detail styles. */
+   FROZEN-4 (page-split): landing, backend-settings, download classes added in Wave C. */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -943,4 +943,191 @@ button:disabled {
   color: #555;
   font-style: italic;
   padding: 0.25rem 0;
+}
+
+/* ── Landing page (FROZEN-4 / page-split) ───────────────────────────────── */
+
+/*
+  .landing          — full-page centered container for the landing page.
+  .landing__links   — stacked column of page links.
+  a.landing__link   — card-like tappable link (each page = one card).
+*/
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 2rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.landing__links {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+a.landing__link {
+  display: block;
+  padding: 1.1rem 1.5rem;
+  background: #242424;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.5rem;
+  color: #e0e0e0;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+a.landing__link:hover {
+  background: #2d2d2d;
+  border-color: #5b9cf6;
+  box-shadow: 0 2px 8px rgba(91, 156, 246, 0.2);
+  color: #fff;
+}
+
+/* ── BackendSettings component (FROZEN-4 / page-split) ──────────────────── */
+
+/*
+  .backend-settings           — self-contained collapsible block.
+  .backend-settings__summary  — always-visible flex row: dot + label + toggle.
+  .backend-settings__label    — "Back-end: <target>" text.
+  .backend-settings__dot      — health indicator dot (grey base).
+    + --ok                    — green: reachable.
+    + --bad                   — red: unreachable.
+    + --checking              — grey: probe in progress.
+  .backend-settings__toggle   — bare disclosure toggle button (▸/▾).
+  .backend-settings__panel    — expanded input + action row.
+  .backend-settings__input    — URL text input.
+  .backend-settings__save     — Save button.
+  .backend-settings__default  — Use default button (secondary).
+*/
+
+.backend-settings {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.backend-settings__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.backend-settings__label {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.backend-settings__dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #888;
+  flex-shrink: 0;
+}
+
+.backend-settings__dot--ok {
+  background: #4caf50;
+}
+
+.backend-settings__dot--bad {
+  background: #c0392b;
+}
+
+.backend-settings__dot--checking {
+  background: #888;
+}
+
+.backend-settings__toggle {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.backend-settings__toggle:hover:not(:disabled) {
+  background: transparent;
+  color: #ccc;
+}
+
+.backend-settings__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.backend-settings__input {
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.backend-settings__save {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.backend-settings__default {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  background: #333;
+  color: #ccc;
+  border: 1px solid #444;
+}
+
+.backend-settings__default:hover:not(:disabled) {
+  background: #444;
+  color: #fff;
+}
+
+/* ── Download group (FROZEN-4 / page-split) ─────────────────────────────── */
+
+/*
+  .results__download   — inline group in the results toolbar (flex row).
+  button.download-btn  — reuses toolbar/button look; muted when disabled.
+*/
+
+.results__download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+button.download-btn {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+button.download-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
 }

@@ -11,11 +11,19 @@ any served file.
 
 ```
 collection/frontend/
-  index.html                    Shell: two mount points + shared datalist
-  main.js                       Entry: mounts CaptureApp + ResultsApp
-  api.js                        Fetch layer for both pages (see §7 of design.md)
+  index.html                    Landing page — links to collect.html and view.html only
+  collect.html                  Collector page — mounts CaptureApp (no results)
+  view.html                     Viewer page — mounts ResultsApp (no capture)
+  collect.js                    Entry for collect.html: render(h(CaptureApp,null), #capture-root)
+  view.js                       Entry for view.html:   render(h(ResultsApp,null), #results-root)
+  backend-url.js                Cookie-backed runtime base-URL store (FROZEN-1)
+                                  getBackendUrl / setBackendUrl / onBackendUrlChange /
+                                  normalizeBackendUrl / backendLabel
+  api.js                        Fetch layer — ALL calls route through BASE()=getBackendUrl()
+                                  (page-split: +exportUrl, +fetchExportBlob; frameUrl prepends BASE)
   styles.css                    Single stylesheet (dark theme, no framework)
-  config.js                     Classic script — sets window.COLLECTION_CONFIG
+  config.js                     Classic script — sets window.COLLECTION_CONFIG;
+                                  BACKEND_URL is the default fallback when no cookie is set
   types.d.ts                    Frozen JSDoc contracts: State, Action, Pack, Lane,
                                   and every component's Props typedef
   tsconfig.json                 tsc check-only config (allowJs + checkJs + noEmit)
@@ -29,14 +37,17 @@ collection/frontend/
     vendor.md                   Provenance record (name, version, source URL)
 
   components/
+    common/
+      BackendSettings.js        Shared collapsible URL editor + health indicator (FROZEN-6)
+                                  Rendered on both Collector and Viewer; props = {} (self-contained)
     capture/
-      CaptureApp.js             Root: source select, capture loop, roster upload
+      CaptureApp.js             Root: source select, capture loop, roster upload, BackendSettings
       SourceSelector.js         Camera / video toggle
       CameraPreview.js          getUserMedia stream (owns its own stream ref)
       CaptureControls.js        Label input + Start/Stop button + status
       RosterUpload.js           CSV upload + status feedback
     results/
-      ResultsApp.js             Root: reducer, poll loop, all mutation handlers
+      ResultsApp.js             Root: reducer, poll loop, all mutation handlers + BackendSettings
       state.js                  Reducer + initialState + deriveView + hashPayload
       Timeline.js               Timeline grid + Pack + GapSeparator (one file)
       Card.js                   Crossing card + Candidate card
@@ -46,6 +57,7 @@ collection/frontend/
       StatusBar.js              Pipeline status readout
       RunSelector.js            Run drop-down
       roster.js                 setRosterOptions — populates #roster-numbers datalist
+      download.js               downloadResults(run, format) — blob→anchor download (DOM here)
 
   results/
     data.js                     Pure data transforms (UNCHANGED from pre-port)
@@ -55,7 +67,16 @@ collection/frontend/
     setup-dom.js                happy-dom globals (preloaded via --import)
     data.test.js                Pure-logic tests for results/data.js (102 cases)
     timeline.test.js            Component test: Timeline renders under Node
+    backend-url.test.js         Unit tests for backend-url.js (normalise, cookie, label, subscribe)
 ```
+
+> **`main.js` is gone.** The old entry that mounted both roots on a single page has been
+> deleted. Each page now has its own entry (`collect.js` / `view.js`).
+
+> **`api.js` routes every call through `BASE()`**, which reads the cookie-backed store
+> from `backend-url.js`. No bare same-origin paths remain — `frameUrl` and all fetch
+> calls prepend `BASE()`. The `BACKEND_URL` value in `config.js` is only the default
+> fallback used by `backend-url.js` when no `wtnc_backend_url` cookie is set.
 
 ---
 

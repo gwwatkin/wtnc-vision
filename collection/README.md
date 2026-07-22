@@ -1,11 +1,16 @@
 # Finish-Line Frame Collector + Live Results
 
-A browser app that **captures frames from the device camera or a video file** and sends
-them to a local back-end that stores them and **runs the CV pipeline asynchronously**,
-deduplicated crossings appearing live in the same page below the camera view.
+A browser app served as **three pages** by one back-end process:
+
+| Page | URL | Purpose |
+|------|-----|---------|
+| **Landing** | `/` | Links to the Collector and Viewer |
+| **Collector** | `/collect.html` | Camera / video → live CV capture |
+| **Viewer** | `/view.html` | Results timeline, review, and crossings download |
 
 One process, one port: `./run.sh` starts everything on **:8000**. See
-[`specs/completed/live-pipeline/`](../specs/completed/live-pipeline/) for requirements and design.
+[`specs/completed/live-pipeline/`](../specs/completed/live-pipeline/) and
+[`specs/page-split/`](../specs/page-split/) for requirements and design.
 
 ---
 
@@ -18,7 +23,7 @@ pip install -r collection/backend/requirements.txt
 # Run (from the repo root or collection/)
 ./collection/run.sh
 
-# Open http://localhost:8000
+# Open http://localhost:8000 (landing page → links to Collector and Viewer)
 ```
 
 > If `.venv` doesn't exist yet: `/usr/bin/python3.12 -m venv .venv && source .venv/bin/activate`
@@ -28,20 +33,45 @@ pip install -r collection/backend/requirements.txt
 
 ## Typical workflow
 
-1. **Upload a roster** (optional but recommended): choose a `number,name,category` CSV
+1. Open **`http://localhost:8000`** — the landing page has links to the **Collector**
+   and **Viewer**.
+2. **Open the Collector** (`/collect.html`) to capture frames.
+3. **Upload a roster** (optional but recommended): choose a `number,name,category` CSV
    with the roster-upload button and set the label/run first. Matching numbers will show
    rider names in the timeline.
-2. **Pick a frame source**: *Camera* (default) or *Video file* — choose from the Source
+4. **Pick a frame source**: *Camera* (default) or *Video file* — choose from the Source
    selector. For a video file, click the file input to choose the clip.
-3. **Set a label** (e.g. `lap3-nearside`) — this is the *run* name. Every frame captured
+5. **Set a label** (e.g. `lap3-nearside`) — this is the *run* name. Every frame captured
    with this label, plus all CV results and the roster, live under `runs/<label>/`.
-4. **Start** to begin capturing. Frames are stored and queued for the CV pipeline.
-   The results timeline below the camera updates live as crossings are detected.
-5. **Click a crossing card** to open a sidebar showing the annotated frame (bounding box +
+6. **Start** to begin capturing. Frames are stored and queued for the CV pipeline.
+7. **Open the Viewer** (`/view.html`, same or another tab) pointed at the same back-end
+   to watch crossings appear live as they are detected.
+8. **Click a crossing card** to open a sidebar showing the annotated frame (bounding box +
    recognized number drawn). Close it with the × button or click another card to replace.
-6. **Stop** when done. Change the label and start again for the next run.
-7. **View past runs**: use the *View run* selector (populated from `GET /runs`) to jump
-   to a previous run's results.
+9. **Stop** on the Collector when done. Change the label and start again for the next run.
+10. **Download crossings** from the Viewer using **Download CSV** or **Download JSON** in
+    the toolbar — both reflect the reviewed state (edits, deletions, order honored).
+
+---
+
+## Setting the back-end URL
+
+Both the Collector and the Viewer show a **"Back-end: …"** indicator with a health dot
+(▸ toggle). Expand it to enter a different base URL (e.g. `http://192.168.1.10:8000`) and
+click **Save**. The choice is stored in a browser cookie (`wtnc_backend_url`) and survives
+reloads. Click **Use default** to revert to same-origin.
+
+**CORS (cross-origin hosting):** if the front-end is served from a different origin than
+the API, add the front-end's exact origin to `backend/config.yaml` and restart:
+
+```yaml
+# collection/backend/config.yaml
+server:
+  allowed_origins:
+    - "http://laptop-A:8000"   # exact scheme + host + port of the front-end origin
+```
+
+The default localhost install needs no change.
 
 ---
 
@@ -107,12 +137,14 @@ contract (`types.d.ts`), how to add a component, and how to update a vendored de
 | `POST` | `/frames` | Store a frame + wake the CV worker |
 | `GET` | `/runs` | `{"runs": ["label1","label2"]}` — known run ids |
 | `GET` | `/results?run=<label>` | `{"run":"…","crossings":[…]}` — enriched crossings |
+| `GET` | `/results/export?run=<label>&format=csv\|json` | Download reviewed crossings as CSV or JSON |
 | `POST` | `/roster` | Upload `number,name,category` CSV for a run |
 | `GET` | `/crossings/<id>/image` | Annotated JPEG for a crossing (sidebar) |
 
 All `run`/`label` params are normalized server-side; the response always echoes the
 safe id. With `live.enabled: false`, `/roster` → 503 and `/results` → empty; capture
-and storage work unchanged.
+and storage work unchanged. `/results/export` returns a valid empty file (header-only
+CSV / `{"run":"…","crossings":[]}` JSON) for empty or disabled runs.
 
 ---
 

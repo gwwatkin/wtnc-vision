@@ -31,9 +31,13 @@ pip install -r collection/backend/requirements.txt
 
 ## Live Pipeline (Camera → CV → Results)
 
-The main workflow is a single page that captures frames from your camera (or a
-pre-recorded video file) and displays recognized rider numbers live as the CV
-pipeline processes them.
+The app is served as **three pages** accessed from one back-end process:
+
+| Page | URL | Purpose |
+|------|-----|---------|
+| **Landing** | `/` (`index.html`) | Links to the other two pages |
+| **Collector** | `/collect.html` | Camera / video → live CV capture |
+| **Viewer** | `/view.html` | Results timeline, review, and download |
 
 ```bash
 ./collection/run.sh
@@ -45,15 +49,41 @@ automatically (~100 MB total). Subsequent runs are fast.
 
 ### Workflow
 
-1. **(Optional)** Upload a roster CSV (`number,name,category` rows) using the button
-   on the page — rider names and categories appear in the timeline.
-2. Set a **label** (e.g. `lap3-nearside`) — this is the *run* name.
-3. Choose a **source** — *Camera* or *Video file*.
-4. **Start** capturing. Frames stream to disk and are processed asynchronously.
-   Crossings appear in the timeline below the camera view as they are detected.
-5. Click a crossing card to open a **sidebar** with the annotated frame (bounding box
+1. Open `http://localhost:8000` — the landing page links to the **Collector** and
+   **Viewer**.
+2. Open the **Collector** to capture frames from the camera or a video file.
+3. **(Optional)** Upload a roster CSV (`number,name,category` rows) using the button
+   on the collector page — rider names and categories appear in the timeline.
+4. Set a **label** (e.g. `lap3-nearside`) — this is the *run* name.
+5. Choose a **source** — *Camera* or *Video file*.
+6. **Start** capturing. Frames stream to disk and are processed asynchronously.
+7. Open the **Viewer** (same or a different tab/device, pointed at the same back-end)
+   to see crossings appear live in the timeline.
+8. Click a crossing card to open a **sidebar** with the annotated frame (bounding box
    + recognized number drawn). Replace by clicking another card; close with ×.
-6. Use the **View run** selector to browse past runs.
+9. Use the **View run** selector to browse past runs.
+
+### Setting the back-end URL
+
+Both the Collector and the Viewer expose a **collapsible settings panel** (▸ next to the
+"Back-end: same-origin" indicator). Expand it to type a base URL (e.g.
+`http://192.168.1.42:8000`) and click **Save**. The choice is stored in a browser
+cookie (`wtnc_backend_url`) so it survives reloads — set it once per browser. Click
+**Use default** to revert to same-origin. The health dot (green/red/grey) shows
+whether the configured back-end is reachable.
+
+**CORS note:** if the front-end is served from a *different origin* than the API (e.g.
+the browser opens `http://laptop-A:8000/view.html` but the back-end runs on
+`http://server-B:8000`), add the front-end origin to `config.yaml`:
+
+```yaml
+# collection/backend/config.yaml
+server:
+  allowed_origins:
+    - "http://laptop-A:8000"   # exact scheme + host + port
+```
+
+Then restart the back-end. The default localhost install needs no change.
 
 ### Review & Editing
 
@@ -101,6 +131,15 @@ pipeline's hint number (if any), and two actions:
 
 Candidates that overlap a confident crossing in time are automatically *suppressed*
 (FR15) and not shown to the operator.
+
+**Downloading crossings (FR12–FR15)**
+
+In the Viewer, two buttons in the toolbar — **Download CSV** and **Download JSON** —
+download the current run's crossings. Both reflect the **reviewed state**: edits,
+manual crossings, ordering overrides, and soft-deleted crossings (excluded). A run
+with no crossings produces a valid empty file (header-only CSV / empty-list JSON).
+The download targets the configured back-end (honors the URL set in the settings
+panel).
 
 **Queue / processing status (FR16–FR19)**
 
@@ -263,4 +302,6 @@ single-image POC and the live pipeline (which points at it via `live.cv_config` 
 - `specs/completed/results-ux/` — original standalone results viewer (superseded by the
   live pipeline's unified page; kept for historical reference)
 - `specs/completed/live-pipeline/` — live pipeline requirements, design, and tasks
+- `specs/completed/fe-modernization/` — Preact port + buildless toolchain
 - `specs/review-editing/` — review & editing feature (frame browser, manual crossings, order, candidates, queue status)
+- `specs/page-split/` — three-page split, configurable back-end URL, crossings download
