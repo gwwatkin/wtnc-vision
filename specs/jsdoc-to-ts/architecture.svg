@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 640" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">
+  <defs>
+    <marker id="arw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .lbl   { fill:#0f172a; }
+      .sub   { fill:#64748b; font-size:11px; }
+      .box   { fill:#ffffff; stroke:#94a3b8; stroke-width:1.4; rx:8; }
+      .src   { fill:#eef2ff; stroke:#6366f1; }
+      .tool  { fill:#ecfeff; stroke:#06b6d4; }
+      .out   { fill:#f0fdf4; stroke:#22c55e; }
+      .be    { fill:#fff7ed; stroke:#f97316; }
+      .cfg   { fill:#fefce8; stroke:#eab308; }
+      .flow  { stroke:#475569; stroke-width:1.6; fill:none; marker-end:url(#arw); }
+      .flowd { stroke:#475569; stroke-width:1.6; fill:none; marker-end:url(#arw); stroke-dasharray:5 4; }
+      .hdr   { font-weight:700; fill:#0f172a; font-size:13px; }
+      .band  { font-weight:700; font-size:12px; letter-spacing:.06em; }
+      .npm   { fill:#faf5ff; stroke:#a855f7; }
+    </style>
+  </defs>
+
+  <text x="20" y="30" class="hdr" font-size="16">JSDoc → TypeScript: authoring, build, and serving</text>
+
+  <!-- ============ SOURCE (shared) ============ -->
+  <rect class="box src" x="20" y="55" width="240" height="205" rx="8"/>
+  <text x="34" y="78" class="hdr">TypeScript source</text>
+  <text x="34" y="96" class="sub">collection/frontend/  (all .ts/.tsx)</text>
+  <rect class="box src" x="36" y="108" width="208" height="26" rx="6"/>
+  <text x="46" y="125" class="lbl">collect.tsx · view.tsx  <tspan class="sub">(2 entries)</tspan></text>
+  <rect class="box src" x="36" y="140" width="208" height="26" rx="6"/>
+  <text x="46" y="157" class="lbl">components/**/*.tsx  <tspan class="sub">JSX</tspan></text>
+  <rect class="box src" x="36" y="172" width="208" height="26" rx="6"/>
+  <text x="46" y="189" class="lbl">api.ts · backend-url.ts · stores</text>
+  <rect class="box src" x="36" y="204" width="208" height="26" rx="6"/>
+  <text x="46" y="221" class="lbl">results/data.ts  <tspan class="sub">pure, strict</tspan></text>
+  <rect class="box src" x="36" y="236" width="208" height="20" rx="6"/>
+  <text x="46" y="250" class="lbl" font-size="12">types.ts  <tspan class="sub">frozen contracts (was types.d.ts)</tspan></text>
+
+  <!-- npm deps -->
+  <rect class="box npm" x="20" y="278" width="240" height="52" rx="8"/>
+  <text x="34" y="299" class="hdr">npm dependencies</text>
+  <text x="34" y="318" class="sub">preact · preact/hooks · (preact/compat alias)</text>
+
+  <!-- ============ DEV band ============ -->
+  <rect x="300" y="55" width="620" height="235" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-dasharray="4 4"/>
+  <text x="316" y="78" class="band" fill="#0891b2">DEV  ·  npm run dev</text>
+
+  <rect class="box tool" x="330" y="92" width="230" height="86" rx="8"/>
+  <text x="344" y="114" class="hdr">Vite dev server</text>
+  <text x="344" y="133" class="sub">@preact/preset-vite</text>
+  <text x="344" y="150" class="sub">esbuild transpile · HMR</text>
+  <text x="344" y="167" class="sub">serves both entries in-memory</text>
+
+  <rect class="box" x="620" y="92" width="270" height="86" rx="8"/>
+  <text x="634" y="114" class="hdr">Browser (dev)</text>
+  <text x="634" y="133" class="sub">collect.html / view.html</text>
+  <text x="634" y="150" class="sub">module scripts from dev server</text>
+  <text x="634" y="167" class="sub">HMR socket ⇄ instant updates</text>
+
+  <path class="flow" d="M560,135 L618,135"/>
+
+  <rect class="box be" x="330" y="205" width="230" height="66" rx="8"/>
+  <text x="344" y="227" class="hdr">FastAPI back-end</text>
+  <text x="344" y="245" class="sub">run separately · real API</text>
+  <text x="344" y="262" class="sub">/results /candidates /frames …</text>
+
+  <path class="flowd" d="M755,178 L640,205 640,205"/>
+  <text x="648" y="196" class="sub">API calls via BACKEND_URL (OQ3)</text>
+
+  <!-- ============ PROD band ============ -->
+  <rect x="300" y="305" width="620" height="315" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-dasharray="4 4"/>
+  <text x="316" y="328" class="band" fill="#16a34a">PROD  ·  npm run build  →  operator run</text>
+
+  <rect class="box tool" x="330" y="342" width="180" height="70" rx="8"/>
+  <text x="344" y="364" class="hdr">Vite build</text>
+  <text x="344" y="383" class="sub">rollup · 2 inputs</text>
+  <text x="344" y="400" class="sub">hashed assets</text>
+
+  <rect class="box out" x="560" y="342" width="180" height="70" rx="8"/>
+  <text x="574" y="364" class="hdr">dist/  (output)</text>
+  <text x="574" y="383" class="sub">*.html + hashed JS/CSS</text>
+  <text x="574" y="400" class="sub">git-ignored (OQ1)</text>
+
+  <rect class="box be" x="330" y="452" width="410" height="78" rx="8"/>
+  <text x="344" y="474" class="hdr">FastAPI  ·  StaticFiles(dist/)</text>
+  <text x="344" y="493" class="sub">app.py:670 — mount points at build output, not source</text>
+  <text x="344" y="510" class="sub">the one back-end line this spec changes (FR6)</text>
+
+  <rect class="box" x="560" y="556" width="330" height="52" rx="8"/>
+  <text x="574" y="577" class="hdr">Browser (prod)</text>
+  <text x="574" y="596" class="sub">loads built bundles from FastAPI</text>
+
+  <path class="flow" d="M510,377 L558,377"/>
+  <path class="flow" d="M650,412 L650,450"/>
+  <path class="flow" d="M600,530 L640,554"/>
+
+  <!-- config injection (spans both) -->
+  <rect class="box cfg" x="760" y="342" width="130" height="98" rx="8"/>
+  <text x="774" y="363" class="hdr" font-size="12">config.js</text>
+  <text x="774" y="381" class="sub">classic script</text>
+  <text x="774" y="397" class="sub">window.</text>
+  <text x="774" y="411" class="sub">COLLECTION_CONFIG</text>
+  <text x="774" y="429" class="sub">deploy-time, not</text>
+  <text x="774" y="443" class="sub">bundled (A4/FR7)</text>
+  <path class="flowd" d="M825,440 L790,556"/>
+
+  <!-- source -> tooling flows -->
+  <path class="flow" d="M260,150 C290,150 300,135 328,135"/>
+  <path class="flow" d="M260,215 C290,215 305,377 328,377"/>
+  <path class="flow" d="M260,304 C285,304 300,360 328,362"/>
+
+  <text x="20" y="632" class="sub">Solid = build/serve flow · Dashed = runtime API + config injection · Green = generated output · Orange = untouched back-end (save the mount dir)</text>
+</svg>
