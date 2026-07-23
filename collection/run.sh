@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # run.sh — start the collection + live-pipeline back-end on :8000.
-# The back-end also serves the unified front-end page (StaticFiles mount).
+# The back-end serves the built front-end from collection/frontend/dist/ (StaticFiles mount).
 # Open http://localhost:8000 in your browser.  Ctrl-C to stop.
 # See collection/README.md for details.
+#
+# PREREQUISITE (one-time, or after any FE change):
+#   npm --prefix collection/frontend ci
+#   npm --prefix collection/frontend run build
+# This produces collection/frontend/dist/ which the back-end serves.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # comp-vision-results/collection

@@ -1,10 +1,10 @@
 /**
  * view.tsx — Results page entry point.
- * STUB: task9 fills the real implementation.
  *
  * @module view
  */
 
-// Stub entry — task9 fills with:
-// render(<ResultsApp />, document.getElementById('results-root')!)
-export {};
+import { render } from 'preact';
+import { ResultsApp } from './components/results/ResultsApp';
+
+render(<ResultsApp />, document.getElementById('results-root')!);

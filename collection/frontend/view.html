@@ -14,9 +14,9 @@
        this node via list="roster-numbers", regardless of which overlay is open. -->
   <datalist id="roster-numbers"></datalist>
 
-  <!-- config.js must load before view.js so window.COLLECTION_CONFIG is set
+  <!-- config.js must load before view.tsx so window.COLLECTION_CONFIG is set
        before the module executes. Classic script = synchronous. -->
-  <script src="config.js"></script>
-  <script type="module" src="view.js"></script>
+  <script src="/config.js"></script>
+  <script type="module" src="/view.tsx"></script>
 </body>
 </html>

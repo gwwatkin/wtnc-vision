@@ -665,7 +665,7 @@ def create_app(cfg: AppConfig, live: "LiveConfig | None" = None) -> FastAPI:
     # ------------------------------------------------------------------
     # Static files — MUST be mounted LAST so API routes take precedence
     # ------------------------------------------------------------------
-    _frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+    _frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
     _frontend_dir = os.path.normpath(_frontend_dir)
     app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="static")
 
